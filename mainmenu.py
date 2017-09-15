@@ -16,9 +16,10 @@ class MainApp(object):
 		self.tk.title("Home - Quizzable - Alpha v0.1")
 		self.mode = MainWindowStates.login
 		self.selectedUser = None
-		self.loadQuizBrowserScreen()
+		self.loadLoginScreen()
 	
 	def loadLoginScreen(self):
+		import userGui
 		headerFont = tkfont.Font(family="Helvetica", size=28)
 		
 		self.tk.grid_columnconfigure(0, weight = 2)
@@ -36,7 +37,7 @@ class MainApp(object):
 		self.loginLabel.grid(row = 1, column = 1)
 		self.loginComboUser = ttk.Combobox(self.tk, state="readonly", values=["No users created, click \"Create User\""])
 		self.loginComboUser.grid(row = 3, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
-		self.loginCreateUserButton = tk.Button(self.tk, text="Create User", bg="#DFDFDF", border=3, relief=tk.GROOVE)
+		self.loginCreateUserButton = tk.Button(self.tk, text="Create User", bg="#DFDFDF", border=3, relief=tk.GROOVE, command = lambda: userGui.UserDialog(self.tk, self))
 		self.loginCreateUserButton.grid(row = 6, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.loginSelectUserButton = tk.Button(self.tk, text="Select User", bg="#EAEAEA", border=3, relief=tk.GROOVE)
 		self.loginSelectUserButton.grid(row = 5, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
@@ -66,16 +67,21 @@ class MainApp(object):
 		self.tk.grid_columnconfigure(1, weight = 1)
 		self.tk.grid_columnconfigure(2, weight = 1)
 		self.tk.grid_columnconfigure(3, weight = 1)
-		# TODO: Put these in a frame
-		self.quizBrowserSearchLabel = tk.Label(self.tk, text="Search:")
+		
+		# The search box
+		self.quizBrowserSearchFrame = tk.Frame(self.tk)
+		self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text="Search:")
 		self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
-		self.quizBrowserSearchEntry = tk.Entry(self.tk, width = 30)
+		self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 30)
 		self.quizBrowserSearchEntry.grid(row = 0, column = 1)
-		#
+		self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2)
+		
+		# Buttons
 		self.createQuizButton = tk.Button(self.tk, text="Create a Quiz")
 		self.importQuizButton = tk.Button(self.tk, text="Import a Quiz")
 		self.createQuizButton.grid(row = 0, column = 2)
 		self.importQuizButton.grid(row = 0, column = 3)
+		# Comboboxes
 		self.filterByExamBoardCombo = ttk.Combobox(self.tk, state="readonly", values=["No filter"])
 		self.filterByExamBoardCombo.set("Filter by exam board")
 		self.filterBySubjectCombo = ttk.Combobox(self.tk, state="readonly", values=["No filter"])
@@ -85,12 +91,12 @@ class MainApp(object):
 		self.filterByExamBoardCombo.grid(row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.filterBySubjectCombo.grid(row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.filterByDifficultyCombo.grid(row = 1, column = 2, sticky=tk.W+tk.E+tk.N+tk.S)
-		# Start of frame
+		# Start of frame that contains the lists.
 		self.quizListFrame = tk.Frame(self.tk)
 		
-		self.quizListFrame.grid_columnconfigure(0, weight = 1)
-		self.quizListFrame.grid_columnconfigure(1, weight = 1)
-		self.quizListFrame.grid_columnconfigure(2, weight = 1)
+		self.quizListFrame.grid_columnconfigure(0, weight = 10)
+		self.quizListFrame.grid_columnconfigure(1, weight = 5)
+		self.quizListFrame.grid_columnconfigure(2, weight = 7)
 		self.quizListFrame.grid_columnconfigure(3, weight = 1)
 		self.quizListFrame.grid_rowconfigure(1, weight = 1)
 		
@@ -115,21 +121,25 @@ class MainApp(object):
 		self.quizListBoxExamBoard.grid(row = 1, column = 2, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.quizListBoxBestAttempt.grid(row = 1, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
 		
-		for i in range(200):
+		for i in range(200): # This is an example entry generator for testing the quiz browser.
 			self.quizListBoxNames.insert(tk.END, "N"+str(i))
 			self.quizListBoxSubject.insert(tk.END, "S"+str(i))
 			self.quizListBoxExamBoard.insert(tk.END, "E"+str(i))
 			self.quizListBoxBestAttempt.insert(tk.END, "B"+str(i))
 		
 		self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, sticky=tk.W+tk.E+tk.N+tk.S)
-		# End of frame
+		# End of lists frame.
 	
 	def scrollbarCommand(self, *args):
+		# This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved.
 		self.quizListBoxNames.yview(*args)
 		self.quizListBoxSubject.yview(*args)
 		self.quizListBoxExamBoard.yview(*args)
 		self.quizListBoxBestAttempt.yview(*args)
+	
 	def scrollOnList(self, *args):
+		# This method is called each time the user scrolls with a list in-focus,
+		# and adjusts the other lists and the scrollbar based on how much is scrolled.
 		self.quizListBoxScrollBar.set(args[0],args[1])
 		self.quizListBoxNames.yview("moveto", args[0])
 		self.quizListBoxSubject.yview("moveto", args[0])
