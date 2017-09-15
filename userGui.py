@@ -30,7 +30,7 @@ class UserDialog(object):
 		
 		self.usernameLabel = tk.Label(self.window, text = "Username:")
 		self.defaultExamBoardLabel = tk.Label(self.window, text = "Default exam board:")
-		self.timerSettingsLabel = tk.Label(self.window, text="Timer settings:  NO TIMER")
+		self.timerSettingsLabel = tk.Label(self.window, text = "Timer settings:  NO TIMER")
 		self.usernameLabel.grid(row = 1, column = 0)
 		self.defaultExamBoardLabel.grid(row = 2, column = 0)
 		self.timerSettingsLabel.grid(row = 3, column = 0)
@@ -46,5 +46,10 @@ class UserDialog(object):
 		self.timerButton2.grid(row = 3, column = 2, sticky=tk.W+tk.E)
 		self.timerButton3.grid(row = 3, column = 3, sticky=tk.W+tk.E)
 		
-		self.completeButton = tk.Button(self.window, text = "Create User")
+		self.completeButton = tk.Button(self.window, text = "Create User", command = self.finish)
 		self.completeButton.grid(row = 4, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+	
+	def finish(self):
+		self.parent.unloadLoginScreen()
+		self.parent.loadQuizBrowserScreen()
+		self.window.destroy()

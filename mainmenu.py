@@ -13,6 +13,7 @@ class MainApp(object):
 	def __init__(self, tkobj):
 		self.tk = tkobj
 		self.tk.geometry("800x600")
+		self.tk.minsize(width = 700, height = 350)
 		self.tk.title("Home - Quizzable - Alpha v0.1")
 		self.mode = MainWindowStates.login
 		self.selectedUser = None
@@ -39,7 +40,7 @@ class MainApp(object):
 		self.loginComboUser.grid(row = 3, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.loginCreateUserButton = tk.Button(self.tk, text="Create User", bg="#DFDFDF", border=3, relief=tk.GROOVE, command = lambda: userGui.UserDialog(self.tk, self))
 		self.loginCreateUserButton.grid(row = 6, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
-		self.loginSelectUserButton = tk.Button(self.tk, text="Select User", bg="#EAEAEA", border=3, relief=tk.GROOVE)
+		self.loginSelectUserButton = tk.Button(self.tk, text="Select User", bg="#EAEAEA", border=3, relief=tk.GROOVE, command = self.selectUser)
 		self.loginSelectUserButton.grid(row = 5, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
 	
 	def unloadLoginScreen(self):
@@ -59,22 +60,35 @@ class MainApp(object):
 		self.tk.grid_columnconfigure(1, weight = 0)
 		self.tk.grid_columnconfigure(2, weight = 0)
 	
+	def selectUser(self):
+		# TODO: Get user from combobox
+		#       Select that user
+		self.unloadLoginScreen()
+		self.loadQuizBrowserScreen()
+	
 	def loadQuizBrowserScreen(self):
 		self.tk.grid_rowconfigure(0, weight = 0, minsize=40)
 		self.tk.grid_rowconfigure(1, weight = 0, minsize=40)
 		self.tk.grid_rowconfigure(2, weight = 1)
+		self.tk.grid_rowconfigure(3, weight = 1)
+		self.tk.grid_rowconfigure(4, weight = 1)
+		self.tk.grid_rowconfigure(5, weight = 1)
+		self.tk.grid_rowconfigure(6, weight = 1)
 		self.tk.grid_columnconfigure(0, weight = 1)
 		self.tk.grid_columnconfigure(1, weight = 1)
 		self.tk.grid_columnconfigure(2, weight = 1)
-		self.tk.grid_columnconfigure(3, weight = 1)
+		self.tk.grid_columnconfigure(3, weight = 1, minsize = 200)
 		
 		# The search box
 		self.quizBrowserSearchFrame = tk.Frame(self.tk)
+		self.quizBrowserSearchFrame.grid_columnconfigure(0, weight = 1)
+		self.quizBrowserSearchFrame.grid_columnconfigure(1, weight = 4)
+		self.quizBrowserSearchFrame.grid_rowconfigure(0, weight = 1)
 		self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text="Search:")
 		self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
-		self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 30)
-		self.quizBrowserSearchEntry.grid(row = 0, column = 1)
-		self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2)
+		self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10)
+		self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky=tk.W+tk.E)
+		self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky=tk.W+tk.E)
 		
 		# Buttons
 		self.createQuizButton = tk.Button(self.tk, text="Create a Quiz")
@@ -94,9 +108,9 @@ class MainApp(object):
 		# Start of frame that contains the lists.
 		self.quizListFrame = tk.Frame(self.tk)
 		
-		self.quizListFrame.grid_columnconfigure(0, weight = 10)
-		self.quizListFrame.grid_columnconfigure(1, weight = 5)
-		self.quizListFrame.grid_columnconfigure(2, weight = 7)
+		self.quizListFrame.grid_columnconfigure(0, weight = 3, minsize = 240)
+		self.quizListFrame.grid_columnconfigure(1, weight = 1)
+		self.quizListFrame.grid_columnconfigure(2, weight = 1)
 		self.quizListFrame.grid_columnconfigure(3, weight = 1)
 		self.quizListFrame.grid_rowconfigure(1, weight = 1)
 		
@@ -127,8 +141,38 @@ class MainApp(object):
 			self.quizListBoxExamBoard.insert(tk.END, "E"+str(i))
 			self.quizListBoxBestAttempt.insert(tk.END, "B"+str(i))
 		
-		self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 5, sticky=tk.W+tk.E+tk.N+tk.S)
 		# End of lists frame.
+		self.loadSidePanel()
+		
+	def loadSidePanel(self):
+		self.quizListSidePanel = tk.Frame(self.tk)
+		self.quizListSidePanel.grid_columnconfigure(0, weight = 1)
+		
+		self.quizListSideName = tk.Label(self.quizListSidePanel, text = "<Quiz Name>")
+		self.quizListSideSubject = tk.Label(self.quizListSidePanel, text = "<Quiz Subject>")
+		self.quizListSideExamboard = tk.Label(self.quizListSidePanel, text = "<Quiz Examboard>")
+		self.quizListSideTotalQuestions = tk.Label(self.quizListSidePanel, text = "<Total number of questions>")
+		self.quizListSideBestAttempt = tk.Label(self.quizListSidePanel, text = "<Quiz Best Attempt>")
+		
+		self.quizListSideName.grid(row = 0, column = 0)
+		self.quizListSideSubject.grid(row = 1, column = 0)
+		self.quizListSideExamboard.grid(row = 2, column = 0)
+		self.quizListSideTotalQuestions.grid(row = 3, column = 0)
+		self.quizListSideBestAttempt.grid(row = 4, column = 0)
+		
+		# End of Frame
+		self.quizListSidePanel.grid(row = 2, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		
+		self.quizListSideLaunchQuizButton = tk.Button(self.tk, text = "Launch Quiz")
+		self.quizListSideEditQuizButton = tk.Button(self.tk, text = "Edit Quiz")
+		self.quizListSideExportQuizButton = tk.Button(self.tk, text = "Export Quiz")
+		self.quizListSideDelteQuizButton = tk.Button(self.tk, text = "Delete Quiz")
+		
+		self.quizListSideLaunchQuizButton.grid(row = 3, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.quizListSideEditQuizButton.grid(row = 4, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.quizListSideExportQuizButton.grid(row = 5, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.quizListSideDelteQuizButton.grid(row = 6, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
 	
 	def scrollbarCommand(self, *args):
 		# This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved.
