@@ -58,8 +58,8 @@ class Quiz(object):
     # i.e. to use these methods you wouldn't need a quiz object ( q = Quiz(args here); q.loadQuiz(other args here) - this is wrong)
     # but you still execute them on the Quiz class ( q = Quiz.loadQuiz(args here) - loadQuiz returns a Quiz object, correct way to use ).
     
-    def loadQuiz():
-        # This will load a quiz from the database.
+    def getQuizzes():
+        # This will load the quizzes from the database.
         pass # TODO
     
     def importQuiz(filename):
