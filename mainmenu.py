@@ -10,7 +10,7 @@ class MainWindowStates:
 	# This would be called an enumeration class in a language like Java, but as far as I know this is Python's closest equivalent.
 	closing = 0
 	login = 1
-	questionlist = 2
+	quizBrowser = 2
 
 class MainApp(object):
 	appName = "Quizzable"
@@ -25,13 +25,52 @@ class MainApp(object):
 		# This sets the minimum dimensions of the window, 700 pixels wide by 350 pixels high.
 		self.tk.minsize(width = 700, height = 350)
 		# This sets the title of the 
-		self.tk.title("Home - "+MainApp.appName+" - "+MainApp.appVersion)
+		self.tk.title("Home - " + MainApp.appName + " - " + MainApp.appVersion)
 		# This sets the state of the application, to keep track of what's on the main window.
 		self.state = MainWindowStates.login
 		# This gets changed once a user is selected.
 		self.selectedUser = None
+		# This creates the menu bar at the top of the window.
+		self.createTitleBarMenu()
 		# This loads the login screen on the main window.
 		self.loadLoginScreen()
+	
+	def createTitleBarMenu(self):
+		# This will add the menu bar to the top of the window.
+		# Returns nothing.
+		# This imports the userGui module from the application directory, which is used for the user settings dialog.
+		import userGui
+		
+		self.menuBar = tk.Menu(self.tk)
+		
+		# This has the "Application" drop-down menu, which only contains one option at the moment.
+		# tearoff = 0 means that the drop-down can't be "ripped off", and be turned into its own little mini-dialog window.
+		self.appMenu = tk.Menu(self.menuBar, tearoff = 0)
+		self.appMenu.add_command(label = "Exit", command = self.endApplication)
+		self.menuBar.add_cascade(label = "Application", menu = self.appMenu)
+		
+		# This code is the "User" drop-down menu, of which the buttons are only active if a user is selected.
+		# TODO: Only display the last two options after the user has been selected / logged in.
+		self.userMenu = tk.Menu(self.menuBar, tearoff = 0)
+		self.userMenu.add_command(label = "Create New User", command = lambda: userGui.UserCreateDialog(self.tk, self))
+		self.userMenu.add_command(label = "User Settings", command = lambda: userGui.UserSettingsDialog(self.tk, self))
+		self.userMenu.add_command(label = "Change User") # TODO
+		self.menuBar.add_cascade(label = "User", menu = self.userMenu)
+		
+		# This is the subjects & exam boards drop-down.
+		self.subjectsAndExamBoardsMenu = tk.Menu(self.menuBar, tearoff = 0)
+		self.subjectsAndExamBoardsMenu.add_command(label = "Edit Subject List") # TODO
+		self.subjectsAndExamBoardsMenu.add_command(label = "Edit Exam Board List") # TODO
+		self.menuBar.add_cascade(label = "Subjects & Exam Boards", menu = self.subjectsAndExamBoardsMenu)
+		
+		# This is the quiz drop-down, and handles creating quizzes and import quizzes.
+		self.quizMenu = tk.Menu(self.menuBar, tearoff = 0)
+		self.quizMenu.add_command(label = "Create a Quiz") # TODO
+		self.quizMenu.add_command(label = "Import a Quiz") # TODO
+		self.menuBar.add_cascade(label = "Quiz Management", menu = self.quizMenu)
+		
+		# Assigns the menu to the window.
+		self.tk.config(menu = self.menuBar)
 	
 	def loadLoginScreen(self):
 		# This method loads the elements of the login screen on to the main window.
@@ -40,9 +79,10 @@ class MainApp(object):
 		# This import is a file in the base directory, and holds the CreateUserDialog class which is used here.
 		import userGui
 		# This is the specification of the header font.
-		headerFont = tkfont.Font(family="Helvetica", size=28)
+		headerFont = tkfont.Font(family = "Helvetica", size = 28)
 		
 		# The following lines configure the "grid", on which elements are placed, to adjust the sizes of the rows and columns.
+		# This grid will have 3 columns and 8 rows.
 		self.tk.grid_columnconfigure(0, weight = 2)
 		self.tk.grid_columnconfigure(1, weight = 1)
 		self.tk.grid_columnconfigure(2, weight = 2)
@@ -98,16 +138,13 @@ class MainApp(object):
 	def loadQuizBrowserScreen(self):
 		# This method loads the quiz browser screen onto the main window.
 		# It takes no arguments and doesn't return anything.
-		
-		# Configuring the window and the window grid.
+		self.state = MainWindowStates.quizBrowser
+		# Configuring the window and the window grid. This grid has 4 rows and 4 columns.
 		self.tk.title("Quiz Browser - "+MainApp.appName+" - "+MainApp.appVersion)
 		self.tk.grid_rowconfigure(0, weight = 0, minsize=40)
 		self.tk.grid_rowconfigure(1, weight = 0, minsize=40)
 		self.tk.grid_rowconfigure(2, weight = 1)
 		self.tk.grid_rowconfigure(3, weight = 1)
-		self.tk.grid_rowconfigure(4, weight = 1)
-		self.tk.grid_rowconfigure(5, weight = 1)
-		self.tk.grid_rowconfigure(6, weight = 1)
 		self.tk.grid_columnconfigure(0, weight = 1)
 		self.tk.grid_columnconfigure(1, weight = 1)
 		self.tk.grid_columnconfigure(2, weight = 1)
@@ -116,11 +153,14 @@ class MainApp(object):
 		# Adding the search box widget.
 		# I create a frame here, as I want the "Search:" text and the text entry to behave like a single element spanning over 2 columns in the window grid.
 		self.quizBrowserSearchFrame = tk.Frame(self.tk)
+		# Frame grid configuration, 2 columns and 1 row.
 		self.quizBrowserSearchFrame.grid_columnconfigure(0, weight = 1)
 		self.quizBrowserSearchFrame.grid_columnconfigure(1, weight = 4)
 		self.quizBrowserSearchFrame.grid_rowconfigure(0, weight = 1)
+		# The search text preceeding the text entry box.
 		self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text="Search:")
 		self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
+		# The actual search bar. This will be tied to an event later which updates the search after each letter is typed.
 		self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10)
 		self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky=tk.W+tk.E)
 		self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky=tk.W+tk.E)
@@ -154,6 +194,7 @@ class MainApp(object):
 		self.quizListLabelSubject = tk.Label(self.quizListFrame, text="Subject")
 		self.quizListLabelExamBoard = tk.Label(self.quizListFrame, text="Examboard")
 		self.quizListLabelBestAttempt = tk.Label(self.quizListFrame, text="Last Attempt")
+		# The positions of the column headings, all on the same row.
 		self.quizListLabelNames.grid(row = 0, column = 0)
 		self.quizListLabelSubject.grid(row = 0, column = 1)
 		self.quizListLabelExamBoard.grid(row = 0, column = 2)
@@ -170,6 +211,7 @@ class MainApp(object):
 		self.quizListBoxExamBoard = tk.Listbox(self.quizListFrame, yscrollcommand=self.scrollOnList)
 		# The Best Attempt for each quiz goes in the fourth column.
 		self.quizListBoxBestAttempt = tk.Listbox(self.quizListFrame, yscrollcommand=self.scrollOnList)
+		# The positioning of the synchronized lists, all on the second row, and all taking as much space as possible in their grid cell using sticky = ...
 		self.quizListBoxNames.grid(row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.quizListBoxSubject.grid(row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
 		self.quizListBoxExamBoard.grid(row = 1, column = 2, sticky=tk.W+tk.E+tk.N+tk.S)
@@ -182,7 +224,7 @@ class MainApp(object):
 			self.quizListBoxExamBoard.insert(tk.END, "E"+str(i))
 			self.quizListBoxBestAttempt.insert(tk.END, "B"+str(i))
 		
-		self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 5, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky=tk.W+tk.E+tk.N+tk.S)
 		# End of lists frame.
 		self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
 		
@@ -206,16 +248,27 @@ class MainApp(object):
 		
 		# End of Frame
 		self.quizListSidePanel.grid(row = 2, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
-		# The buttons to do actions on the currently selected quiz.
-		self.quizListSideLaunchQuizButton = tk.Button(self.tk, text = "Launch Quiz")
-		self.quizListSideEditQuizButton = tk.Button(self.tk, text = "Edit Quiz")
-		self.quizListSideExportQuizButton = tk.Button(self.tk, text = "Export Quiz")
-		self.quizListSideDelteQuizButton = tk.Button(self.tk, text = "Delete Quiz")
+		
+		# The buttons to do actions on the currently selected quiz. These are contained in their own frame.
+		self.quizListSideButtonFrame = tk.Frame(self.tk)
+		# The button frame grid configuration. There will be 1 column and 4 rows.
+		self.quizListSideButtonFrame.grid_columnconfigure(0, weight = 1)
+		self.quizListSideButtonFrame.grid_rowconfigure(0, weight = 1)
+		self.quizListSideButtonFrame.grid_rowconfigure(1, weight = 1)
+		self.quizListSideButtonFrame.grid_rowconfigure(2, weight = 1)
+		self.quizListSideButtonFrame.grid_rowconfigure(3, weight = 1)
+		# The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
+		self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8)
+		self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8)
+		self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8)
+		self.quizListSideDelteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8)
 		# The positioning for the buttons above.
-		self.quizListSideLaunchQuizButton.grid(row = 3, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
-		self.quizListSideEditQuizButton.grid(row = 4, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
-		self.quizListSideExportQuizButton.grid(row = 5, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
-		self.quizListSideDelteQuizButton.grid(row = 6, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.quizListSideLaunchQuizButton.grid(row = 0, column = 0)
+		self.quizListSideEditQuizButton.grid(row = 1, column = 0)
+		self.quizListSideExportQuizButton.grid(row = 2, column = 0)
+		self.quizListSideDelteQuizButton.grid(row = 3, column = 0)
+		# Placing the button frame.
+		self.quizListSideButtonFrame.grid(row = 3, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
 	
 	def scrollbarCommand(self, *args):
 		# This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved.
@@ -225,13 +278,17 @@ class MainApp(object):
 		self.quizListBoxBestAttempt.yview(*args)
 	
 	def scrollOnList(self, *args):
-		# This method is called each time the user scrolls with a list in-focus,
+		# This method is called each time the user scrolls (often with the mouse's scroll wheel) with a list in-focus,
 		# and adjusts the other lists and the scrollbar based on how much is scrolled.
 		self.quizListBoxScrollBar.set(args[0], args[1])
 		self.quizListBoxNames.yview("moveto", args[0])
 		self.quizListBoxSubject.yview("moveto", args[0])
 		self.quizListBoxExamBoard.yview("moveto", args[0])
 		self.quizListBoxBestAttempt.yview("moveto", args[0])
+		
+	def endApplication(self):
+		self.state = MainWindowStates.closing
+		self.tk.destroy()
 
 def startGUI():
 	print("Building GUI...")

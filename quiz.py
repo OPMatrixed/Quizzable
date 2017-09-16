@@ -4,13 +4,15 @@
 # as well as importing and exporting quizzes into a non-database format.
 
 class Question(object):
-    def __init__(self, question, correctAnswer, otherAnswers, id):
+    def __init__(self, question, correctAnswer, otherAnswers, id, hint, help):
         # This is the Question object creation method, and it expects all arguments listed above.
         # question: String, correctAnswer: String, otherAnswers: List, id: Integer
         self.question = question
         self.correctAnswer = correctAnswer
         self.wrongAnswers = otherAnswers
         self.id = id
+		self.hint = hint
+		self.help = help
     
     def getShuffledAnswers(self):
         # Returns a shuffled set of answers, along with the correct answer's index.
@@ -27,7 +29,7 @@ class Question(object):
         return answers, index
 
 class Quiz(object):
-    def __init__(self, name, tags, topic, subject, difficulty, examboard, questions = []):
+    def __init__(self, name, tags, topic, subject, examboard, difficulty, questions = []):
         # Quiz object creation method, all parameters except the questions are required,
         # questions can be added later through the preferred addQuestion method.
         # name: String, tags: List (of strings), topic: String, subject: String, difficulty: Integer, examboard: String, questions: List (not required)
@@ -55,14 +57,15 @@ class Quiz(object):
         pass # TODO
     
     # Methods below are not executed on an object, but the Quiz class itself.
-    # i.e. to use these methods you wouldn't need a quiz object ( q = Quiz(args here); q.loadQuiz(other args here) - this is wrong)
-    # but you still execute them on the Quiz class ( q = Quiz.loadQuiz(args here) - loadQuiz returns a Quiz object, correct way to use ).
-    
-    def getQuizzes():
-        # This will load the quizzes from the database.
-        pass # TODO
-    
-    def importQuiz(filename):
-        # This will import a quiz from outside the database (i.e. from a file), and load it as a Quiz object.
-        # This will not save to the database by default.
-        pass # TODO
+	# i.e. to use these methods you wouldn't need a quiz object ( q = Quiz(args here); q.loadQuiz(other args here) - this is wrong)
+	# but you still execute them on the Quiz class ( q = Quiz.loadQuiz(args here) - loadQuiz returns a Quiz object, correct way to use ).
+	
+	def getQuizzes(): # This is not called on an object, but the class itself.
+		# This will load the quizzes from the database.
+		pass # TODO
+	
+	def importQuiz(filename): # This is not called on an object, but the class itself.
+		# This will import a quiz from outside the database (i.e. from a file), and load it as a Quiz object.
+		# This will save it to the database by default.
+		# This will generate and return a Quiz object.
+		pass # TODO
