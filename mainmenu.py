@@ -4,6 +4,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
+import tkinter.filedialog as tkfile
 
 class MainWindowStates:
 	# Stored in MainApp.state, it holds one of these integers, which corresponds to the state of the main window of the application.
@@ -66,7 +67,7 @@ class MainApp(object):
 		# This is the quiz drop-down, and handles creating quizzes and import quizzes.
 		self.quizMenu = tk.Menu(self.menuBar, tearoff = 0)
 		self.quizMenu.add_command(label = "Create a Quiz") # TODO
-		self.quizMenu.add_command(label = "Import a Quiz") # TODO
+		self.quizMenu.add_command(label = "Import a Quiz", command = self.importQuizButtonCommand)
 		self.menuBar.add_cascade(label = "Quiz Management", menu = self.quizMenu)
 		
 		# Assigns the menu to the window.
@@ -130,6 +131,7 @@ class MainApp(object):
 		self.tk.grid_columnconfigure(2, weight = 0)
 	
 	def selectUser(self):
+		# Called on clicking the select user button on the login screen.
 		# TODO: Get user from combobox
 		#       Select that user
 		self.unloadLoginScreen()
@@ -167,7 +169,7 @@ class MainApp(object):
 		
 		# Create a Quiz and Import a Quiz Buttons
 		self.createQuizButton = tk.Button(self.tk, text="Create a Quiz")
-		self.importQuizButton = tk.Button(self.tk, text="Import a Quiz")
+		self.importQuizButton = tk.Button(self.tk, text="Import a Quiz", command = self.importQuizButtonCommand)
 		self.createQuizButton.grid(row = 0, column = 2)
 		self.importQuizButton.grid(row = 0, column = 3)
 		# The quiz filters, as comboboxes. They default to having the text "Filter by ...", but after selecting another value they can't go back to "Filter by ..."
@@ -177,7 +179,8 @@ class MainApp(object):
 		self.filterBySubjectCombo = ttk.Combobox(self.tk, state="readonly", values=["No filter"])
 		self.filterBySubjectCombo.set("Filter by subject")
 		self.filterByDifficultyCombo = ttk.Combobox(self.tk, state="readonly", values=["No filter","1","2","3","4","5","2 and above","3 and above","4 and above","2 and below","3 and below","4 and below"])
-		self.filterByDifficultyCombo .set("Filter by difficulty")
+		self.filterByDifficultyCombo.set("Filter by difficulty")
+		# Positioning of the filter comboboxes. All fit on the same row.
 		self.filterByExamBoardCombo.grid(row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S) # Sticky just makes the element strech in certain directions.
 		self.filterBySubjectCombo.grid(row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S) # tk.N+tk.S means up and down (North and South), tk.W+tk.E means West and East
 		self.filterByDifficultyCombo.grid(row = 1, column = 2, sticky=tk.W+tk.E+tk.N+tk.S) # Adding the directions up makes it expand in all the directions you specify.
@@ -227,7 +230,7 @@ class MainApp(object):
 		self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky=tk.W+tk.E+tk.N+tk.S)
 		# End of lists frame.
 		self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
-		
+	
 	def loadSidePanel(self):
 		# This method loads the side panel to the Quiz List screen, it contains the quiz details of the currently selected quiz,
 		# it also contains the buttons for doing actions on the quiz, e.g. launching/editing the selected quiz.
@@ -285,7 +288,18 @@ class MainApp(object):
 		self.quizListBoxSubject.yview("moveto", args[0])
 		self.quizListBoxExamBoard.yview("moveto", args[0])
 		self.quizListBoxBestAttempt.yview("moveto", args[0])
-		
+	
+	def importQuizButtonCommand(self):
+		# This function is tied to the import quiz button and the import quiz option on the top menu.
+		import quiz
+		# This launches your OS's file explorer, and lets you select a file that ends with ".xml".
+		filename = tkfile.askopenfilename(filetypes = ["\"Quiz File\" .xml"], parent = self.tk, title = "Import Quiz")
+		print(filename) # Line useful for debugging
+		if(filename == None or filename == ""):
+			# If the user didn't choose a file, usually by closing the window, we take no further action.
+			return
+		q = quiz.Quiz.importQuiz(filename)
+	
 	def endApplication(self):
 		self.state = MainWindowStates.closing
 		self.tk.destroy()

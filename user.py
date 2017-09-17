@@ -17,12 +17,12 @@ class User(object):
 		if(id == -1):
 			self.addUserToDatabase()
 	
-	def addUserToDatabase(self):
+	def addToDatabase(self):
 		# This adds this user to the database.
 		# TODO: Create database entry and set self.id to the auto-generated id.
 		pass
 		
-	def saveUserPreferences(self, timeConfig = -1, defaultExamBoard = -1):
+	def savePreferences(self, timeConfig = -1, defaultExamBoard = -1):
 		# This allows the software to change the user's settings and update the database if they have changed.
 		# Arguments: timeConfig: Integer between -1 and 2 inclusive (-1 is the rogue value to indicate no change).
 		#            defaultExamBoard: Integer (-1 is the rogue value to indicate no change).
@@ -36,7 +36,7 @@ class User(object):
 			self.defaultExamBoard = defaultExamBoard
 		# TODO: Update database entry
 	
-	def deleteUser(self):
+	def delete(self):
 		# Removes the user from the database.
 		# Returns: True if successfully deleted.
 		#          False if failed to delete.
