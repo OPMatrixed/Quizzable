@@ -29,16 +29,15 @@ class Question(object):
 		return answers, index
 
 class Quiz(object):
-	def __init__(self, name, tags, topic, subject, examboard, difficulty, questions = []):
+	def __init__(self, name, tags, subject, examBoard, difficulty, questions = []):
 		# Quiz object creation method, all parameters except the questions are required,
 		# questions can be added later through the preferred addQuestion method.
-		# name: String, tags: List (of strings), topic: String, subject: String, difficulty: Integer, examboard: String, questions: List (not required)
+		# name: String, tags: List (of strings), subject: String, difficulty: Integer, examboard: String, questions: List (not required)
 		self.name = name
 		self.tags = tags
-		self.topic = topic
 		self.subject = subject
-		self.difficulty = difficulty
-		self.examboard = examboard
+		self.difficulty = difficulty # TODO: This is currently a string, later it will be an integer id.
+		self.examBoard = examBoard # TODO: This is currently a string, later it will be an integer id.
 		self.questions = questions
 		
 	def addQuestion(self, question, correctAnswer, otherAnswers):

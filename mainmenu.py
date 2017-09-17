@@ -19,7 +19,6 @@ class MainApp(object):
 	def __init__(self, tkobj):
 		# This function is called when MainApp is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
 		# This function techinally returns the object it is initalising (aka "self" in the context of this method), so it can be assigned to a variable.
-		
 		self.tk = tkobj
 		# This sets the default dimensions of the window, 800 pixels wide by 600 pixels high.
 		self.tk.geometry("800x600")
@@ -261,7 +260,7 @@ class MainApp(object):
 		self.quizListSideButtonFrame.grid_rowconfigure(2, weight = 1)
 		self.quizListSideButtonFrame.grid_rowconfigure(3, weight = 1)
 		# The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
-		self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8)
+		self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz)
 		self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8)
 		self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8)
 		self.quizListSideDelteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8)
@@ -288,6 +287,12 @@ class MainApp(object):
 		self.quizListBoxSubject.yview("moveto", args[0])
 		self.quizListBoxExamBoard.yview("moveto", args[0])
 		self.quizListBoxBestAttempt.yview("moveto", args[0])
+	
+	def launchQuiz(self):
+		# This launches the quiz window for the currently selected quiz.
+		import quiz, quizGui
+		quiz = quiz.Quiz("Example Quiz", ["An Example"], "Example Subject", "Example Exam Board", 1, [])
+		quizGui.ActiveQuizDialog(self.tk, self, quiz)
 	
 	def importQuizButtonCommand(self):
 		# This function is tied to the import quiz button and the import quiz option on the top menu.
