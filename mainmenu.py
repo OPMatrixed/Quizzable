@@ -67,7 +67,9 @@ class MainApp(object):
 		self.quizMenu = tk.Menu(self.menuBar, tearoff = 0)
 		self.quizMenu.add_command(label = "Create a Quiz") # TODO
 		self.quizMenu.add_command(label = "Import a Quiz", command = self.importQuizButtonCommand)
-		self.menuBar.add_cascade(label = "Quiz Management", menu = self.quizMenu)
+		self.menuBar.add_cascade(label = "Quiz Management", menu = self.quizMenu) 
+		
+		self.menuBar.add_command(label = "Statistics")
 		
 		# Assigns the menu to the window.
 		self.tk.config(menu = self.menuBar)
