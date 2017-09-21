@@ -33,24 +33,59 @@ class StatisticsDialog(object):
 		self.window.grid_rowconfigure(1, weight = 1)
 		
 		# The filter comboboxes and apply button that fit on the first row.
-		self.filterBySubjectComboBox = ttk.Combobox(self.window, values = ["No filter"])
-		self.filterByExamBoardComboBox = ttk.Combobox(self.window, values = ["No filter"])
+		self.filterBySubjectComboBox    = ttk.Combobox(self.window, values = ["No filter"])
+		self.filterByExamBoardComboBox  = ttk.Combobox(self.window, values = ["No filter"])
 		self.filterByDifficultyComboBox = ttk.Combobox(self.window, values = ["No filter"])
-		self.applyFiltersButton = tk.Button(self.window, text = "Apply filters", command = self.applyFilters)
+		self.applyFiltersButton         = tk.Button(self.window, text = "Apply filters", command = self.applyFilters)
 		# Postitioning for the comboboxes and the button.
-		self.filterBySubjectComboBox.grid(row = 0, column = 0)
-		self.filterByExamBoardComboBox.grid(row = 0, column = 1)
-		self.filterByDifficultyComboBox.grid(row = 0, column = 2)
+		self.filterBySubjectComboBox.grid(row = 0, column = 0, sticky = tk.W+tk.E)
+		self.filterByExamBoardComboBox.grid(row = 0, column = 1, sticky = tk.W+tk.E)
+		self.filterByDifficultyComboBox.grid(row = 0, column = 2, sticky = tk.W+tk.E)
 		self.applyFiltersButton.grid(row = 0, column = 3)
 		
 		# For the rest of the window, I have decided to put it all in a six-column, three-row frame,
 		# and this will be spread over all four columns and sit on the bottom row of the window it is sitting on.
 		self.statsFrame = tk.Frame(self.window)
 		
-		# TODO
+		# The grid configuration of the statistics frame. There will be 3 rows, and the first list will span over the bottom two rows. Labels on the first row.
+		# There will be 6 columns, but only the ones that contain lists should expand when the window is resizes, so the scrollbar columns won't be weighted.
+		self.statsFrame.grid_columnconfigure(0, weight = 1)
+		self.statsFrame.grid_columnconfigure(2, weight = 1)
+		self.statsFrame.grid_columnconfigure(4, weight = 1)
+		self.statsFrame.grid_rowconfigure(1, weight = 1)
+		self.statsFrame.grid_rowconfigure(2, minsize = 30) # Button row isn't weighted.
+		
+		# The labels above the columns in the statistics frame.
+		self.latestResultsLabel  = tk.Label(self.statsFrame, text = "Latest Results")
+		self.statisticsLabel     = tk.Label(self.statsFrame, text = "Statistics")
+		self.quizReviewLabel     = tk.Label(self.statsFrame, text = "Quizzes in need of review")
+		# The lists themselves
+		self.latestResultsList   = tk.Listbox(self.statsFrame)
+		self.statisticsList      = tk.Listbox(self.statsFrame)
+		self.quizReviewList      = tk.Listbox(self.statsFrame)
+		# Scroll bars
+		self.latestResultsScroll = tk.Scrollbar(self.statsFrame)
+		self.statisticsScroll    = tk.Scrollbar(self.statsFrame)
+		self.quizReviewScroll    = tk.Scrollbar(self.statsFrame)
+		# Buttons
+		self.viewGraphsButton    = tk.Button(self.statsFrame, text = "View graphs", padx = 30, pady = 3)
+		self.redoQuizButton      = tk.Button(self.statsFrame, text = "Redo quiz", padx = 30, pady = 3)
+		
+		# Positioning the elements in the frame
+		self.latestResultsLabel.grid(row = 0, column = 0, columnspan = 2)
+		self.statisticsLabel.grid(row = 0, column = 2, columnspan = 2)
+		self.quizReviewLabel.grid(row = 0, column = 4, columnspan = 2)
+		self.latestResultsList.grid(row = 1, column = 0, rowspan = 2, sticky = tk.N+tk.S+tk.E+tk.W)
+		self.statisticsList.grid(row = 1, column = 2, sticky = tk.N+tk.S+tk.E+tk.W)
+		self.quizReviewList.grid(row = 1, column = 4, sticky = tk.N+tk.S+tk.E+tk.W)
+		self.latestResultsScroll.grid(row = 1, column = 1, rowspan = 2, sticky = tk.N+tk.S)
+		self.statisticsScroll.grid(row = 1, column = 3, sticky = tk.N+tk.S)
+		self.quizReviewScroll.grid(row = 1, column = 5, sticky = tk.N+tk.S)
+		self.viewGraphsButton.grid(row = 2, column = 2, columnspan = 2)
+		self.redoQuizButton.grid(row = 2, column = 4, columnspan = 2)
 		
 		# End of the frame.
-		self.statsFrame.grid(row = 1, column = 0, columnspan = 4)
+		self.statsFrame.grid(row = 1, column = 0, columnspan = 4, sticky = tk.N+tk.S+tk.E+tk.W)
 		
 	def applyFilters(self):
 		pass

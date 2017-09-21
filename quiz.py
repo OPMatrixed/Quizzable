@@ -33,18 +33,18 @@ class Quiz(object):
 		# Quiz object creation method, all parameters except the questions are required,
 		# questions can be added later through the preferred addQuestion method.
 		# name: String, tags: List (of strings), subject: String, difficulty: Integer, examboard: String, questions: List (not required)
-		self.name = name
-		self.tags = tags
-		self.subject = subject
+		self.name       = name
+		self.tags       = tags
+		self.subject    = subject
 		self.difficulty = difficulty # TODO: This is currently a string, later it will be an integer id.
-		self.examBoard = examBoard # TODO: This is currently a string, later it will be an integer id.
-		self.questions = questions
+		self.examBoard  = examBoard # TODO: This is currently a string, later it will be an integer id.
+		self.questions  = questions
 		
 	def addQuestion(self, question, correctAnswer, otherAnswers):
 		# This method adds a question to the quiz object based on the parameters given.
 		# question: String, correctAnswer: String, otherAnswers: List (of strings)
 		id = 0 # TODO: get id from database index.
-		q = Question(question, correctAnswer, otherAnswers, id)
+		q  = Question(question, correctAnswer, otherAnswers, id)
 		self.questions.append(q)
 	
 	def save(self):

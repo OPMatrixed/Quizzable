@@ -57,12 +57,12 @@ class UserCreateDialog(object):
 		self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)")
 		self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)")
 		# Each of the buttons needs its own column, so the username and examboard entries are spread over three columns, using columnspan = 3.
-		self.usernameEntry.grid(row = 1, column = 1, columnspan = 3, sticky=tk.W+tk.E)
-		self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky=tk.W+tk.E)
+		self.usernameEntry.grid        (row = 1, column = 1, columnspan = 3, sticky = tk.W+tk.E)
+		self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky = tk.W+tk.E)
 		# The three buttons are all on the same row.
-		self.timerButton1.grid(row = 3, column = 1, sticky=tk.W+tk.E)
-		self.timerButton2.grid(row = 3, column = 2, sticky=tk.W+tk.E)
-		self.timerButton3.grid(row = 3, column = 3, sticky=tk.W+tk.E)
+		self.timerButton1.grid(row = 3, column = 1, sticky = tk.W+tk.E)
+		self.timerButton2.grid(row = 3, column = 2, sticky = tk.W+tk.E)
+		self.timerButton3.grid(row = 3, column = 3, sticky = tk.W+tk.E)
 		
 		# This button finalises the user and will save the users details to the database, and select the user, brining the actual user straight to the quiz browser.
 		self.completeButton = tk.Button(self.window, text = "Create User", command = self.finish)
@@ -110,17 +110,16 @@ class UserSettingsDialog(object):
 		# The header text font
 		self.headerFont = tkfont.Font(family="Helvetica", size=28)
 		# The header itself.
-		self.headerLabel = tk.Label(self.window, text = "User Settings", font=self.headerFont)
-		self.headerLabel.grid(row = 0, column = 0, columnspan=2)
-		
+		self.headerLabel           = tk.Label(self.window, text = "User Settings", font=self.headerFont)
 		# The Labels/Text widgets to the left of the entry boxes/buttons with the name of the input expected on the right.
-		self.usernameLabel = tk.Label(self.window, text = "<Username here>")
+		self.usernameLabel         = tk.Label(self.window, text = "<Username here>")
 		self.defaultExamBoardLabel = tk.Label(self.window, text = "Default exam board:")
-		self.timerSettingsLabel = tk.Label(self.window, text = "Timer settings:  NO TIMER")
+		self.timerSettingsLabel    = tk.Label(self.window, text = "Timer settings:  NO TIMER")
 		# These go on the first column (column 0)
-		self.usernameLabel.grid(row = 1, column = 0)
+		self.headerLabel.grid          (row = 0, column = 0, columnspan=2)
+		self.usernameLabel.grid        (row = 1, column = 0)
 		self.defaultExamBoardLabel.grid(row = 2, column = 0)
-		self.timerSettingsLabel.grid(row = 3, column = 0)
+		self.timerSettingsLabel.grid   (row = 3, column = 0)
 		
 		# The actual entry fields for the user settings.
 		# Examboard entry is a combobox. It gets the options from the examboards tabel in the database.
@@ -130,7 +129,7 @@ class UserSettingsDialog(object):
 		self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)")
 		self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)")
 		# Each of the buttons needs its own column, so the examboard entry is spread over three columns, using columnspan = 3.
-		self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky=tk.W+tk.E)
+		self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky = tk.W+tk.E)
 		# The three buttons are all on the same row.
 		self.timerButton1.grid(row = 3, column = 1, sticky=tk.W+tk.E)
 		self.timerButton2.grid(row = 3, column = 2, sticky=tk.W+tk.E)
@@ -138,7 +137,7 @@ class UserSettingsDialog(object):
 		
 		# This button will run the self.finish() method, and will save the user settings in the database.
 		self.completeButton = tk.Button(self.window, text = "Update user settings", command = self.finish)
-		self.completeButton.grid(row = 4, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+		self.completeButton.grid(row = 4, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
 	
 	def finish(self):
 		# This is called when the user clicks the "Update user settings" button in the bottom right of the dialog.

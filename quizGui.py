@@ -39,23 +39,23 @@ class ActiveQuizDialog(object):
 		self.questionFont = tkfont.Font(family = "Helvetica", size = 16)
 		
 		# The text labels in the top 3 rows.
-		self.quizNameLabel = tk.Label(self.window, text = quiz.name, anchor = tk.NW, font = self.quizNameFont)
+		self.quizNameLabel                = tk.Label(self.window, text = quiz.name, anchor = tk.NW, font = self.quizNameFont)
 		self.quizSubjectAndExamBoardLabel = tk.Label(self.window, text = quiz.subject + " - " + quiz.examBoard, anchor = tk.NW)
 		# Lots of arguments on the next line of code. anchor = tk.W means that all new lines are left-aligned.
 		# justify = tk.LEFT means that the whole chunk of text should be left-aligned. Both anchor and justify are needed because they have small differences.
 		# wraplength is the amount of pixels the text can fill horizontally before needing to go onto a new line.
 		# TODO: Dynamic wraplength (in pixels), which should always be 75% of the window width.
 		#       Add an event listener on toplevel for window size changes.
-		self.questionLabel = tk.Label(self.window, anchor = tk.W, font = self.questionFont, justify = tk.LEFT, wraplength = 550,
+		self.questionLabel  = tk.Label(self.window, anchor = tk.W, font = self.questionFont, justify = tk.LEFT, wraplength = 550,
 				text = "<Question goes here> \n<If the question is a long question, then this text box spans over multiple lines>")
-		self.usernameLabel = tk.Label(self.window, text = "<Username here>")
+		self.usernameLabel  = tk.Label(self.window, text = "<Username here>")
 		self.timeLimitLabel = tk.Label(self.window, text = "<Time limit>")
 		# Positioning the text labels on the top 3 rows.
-		self.quizNameLabel.grid(row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+		self.quizNameLabel.grid               (row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
 		self.quizSubjectAndExamBoardLabel.grid(row = 1, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
-		self.questionLabel.grid(row = 2, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
-		self.usernameLabel.grid(row = 0, column = 1, rowspan = 2)
-		self.timeLimitLabel.grid(row = 2, column = 1)
+		self.questionLabel.grid               (row = 2, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+		self.usernameLabel.grid               (row = 0, column = 1, rowspan = 2)
+		self.timeLimitLabel.grid              (row = 2, column = 1)
 		# The answer buttons
 		self.answerButton1 = tk.Button(self.window, text = "<Option 1>")
 		self.answerButton2 = tk.Button(self.window, text = "<Option 2>")
@@ -67,14 +67,14 @@ class ActiveQuizDialog(object):
 		self.answerButton3.grid(row = 5, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
 		self.answerButton4.grid(row = 6, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
 		# The option buttons
-		self.hintButton = tk.Button(self.window, text = "Hint")
-		self.helpButton = tk.Button(self.window, text = "Help!")
-		self.pauseButton = tk.Button(self.window, text = "Pause")
+		self.hintButton    = tk.Button(self.window, text = "Hint")
+		self.helpButton    = tk.Button(self.window, text = "Help!")
+		self.pauseButton   = tk.Button(self.window, text = "Pause")
 		self.endQuizButton = tk.Button(self.window, text = "End Quiz", command = self.window.destroy)
 		# Positioning the option buttons
-		self.hintButton.grid(row = 3, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
-		self.helpButton.grid(row = 4, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
-		self.pauseButton.grid(row = 5, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
+		self.hintButton.grid   (row = 3, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
+		self.helpButton.grid   (row = 4, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
+		self.pauseButton.grid  (row = 5, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
 		self.endQuizButton.grid(row = 6, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
 	
 	def finish(self):
