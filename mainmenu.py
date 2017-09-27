@@ -6,6 +6,9 @@ import tkinter.ttk as ttk
 import tkinter.font as tkfont
 import tkinter.filedialog as tkfile
 
+# This imports the database file from the same directory as this file.
+import database
+
 class MainWindowStates:
 	# Stored in MainApp.state, it holds one of these integers, which corresponds to the state of the main window of the application.
 	# This would be called an enumeration class in a language like Java, but as far as I know this is Python's closest equivalent.
@@ -15,7 +18,7 @@ class MainWindowStates:
 
 class MainApp(object):
 	appName = "Quizzable"
-	appVersion = "Alpha v0.1"
+	appVersion = "Alpha v0.2"
 	def __init__(self, tkobj):
 		# This function is called when MainApp is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
 		# This function techinally returns the object it is initalising (aka "self" in the context of this method), so it can be assigned to a variable.
@@ -26,10 +29,14 @@ class MainApp(object):
 		self.tk.minsize(width = 700, height = 350)
 		# This sets the title of the application
 		self.tk.title("Home - " + MainApp.appName + " - " + MainApp.appVersion)
+		# Makes the program destroy the window when the X button in the top right is pressed.
+		self.tk.protocol("WM_DELETE_WINDOW", self.endApplication)
 		# This sets the state of the application, to keep track of what's on the main window.
 		self.state = MainWindowStates.login
 		# This gets changed once a user is selected.
 		self.selectedUser = None
+		# This creates the database connection.
+		self.database = database.DatabaseManager("QuizAppDatabase.accdb")
 		# This creates the menu bar at the top of the window.
 		self.createTitleBarMenu()
 		# This loads the login screen on the main window.
@@ -81,7 +88,7 @@ class MainApp(object):
 		# This method loads the elements of the login screen on to the main window.
 		# No arguments or return values.
 		
-		# This import is a file in the base directory, and holds the CreateUserDialog class which is used here.
+		# This import is a file in the base directory, and holds the UserCreateDialog class which is used here.
 		import userGui
 		# This is the specification of the header font.
 		headerFont = tkfont.Font(family = "Helvetica", size = 28)
@@ -106,7 +113,7 @@ class MainApp(object):
 		# The "login" button, which selects the user currently selected in the combobox.
 		self.loginSelectUserButton = tk.Button(self.tk, text="Select User", bg="#EAEAEA", border=3, relief=tk.GROOVE, command = self.selectUser)
 		# The create user button, which launches the Create User box.
-		self.loginCreateUserButton = tk.Button(self.tk, text="Create User", bg="#DFDFDF", border=3, relief=tk.GROOVE, command = lambda: userGui.UserDialog(self.tk, self))
+		self.loginCreateUserButton = tk.Button(self.tk, text="Create User", bg="#DFDFDF", border=3, relief=tk.GROOVE, command = lambda: userGui.UserCreateDialog(self.tk, self))
 		# Positioning the above elements in the grid layout.
 		self.loginLabel.grid           (row = 1, column = 1)
 		self.loginComboUser.grid       (row = 3, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
@@ -314,6 +321,7 @@ class MainApp(object):
 		q = quiz.Quiz.importQuiz(filename)
 	
 	def endApplication(self):
+		self.database.dispose()
 		self.state = MainWindowStates.closing
 		self.tk.destroy()
 
@@ -321,8 +329,6 @@ def startGUI():
 	print("Building GUI...")
 	# Creates the window
 	master = tk.Tk()
-	# Makes the program destroy the window when the X button in the top right is pressed.
-	master.protocol("WM_DELETE_WINDOW", master.destroy)
 	# This loads the MainApp class and loads all the graphical elements.
 	MainApp(master)
 	print("Finished building GUI.")

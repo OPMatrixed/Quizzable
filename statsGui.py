@@ -1,5 +1,5 @@
 # This file will handle the statistics window, which is accessed from the top menu and the quiz browser.
-# This window will switch between statistics view and graphs view, both of these are specified on the design document.
+# This window will switch between statistics view and charts view, both of these are specified on the design document.
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -15,9 +15,9 @@ class StatisticsDialog(object):
 		# This is to stop the widgets on the window from touching the edges of the window, which doesn't look that good.
 		self.window = tk.Toplevel(toplevel, padx = 5, pady = 5)
 		# Dimensions of the window: 500 pixels wide by 300 pixels high.
-		self.window.geometry("500x300")
+		self.window.geometry("600x400")
 		# The minimum dimensions of the window, as this window is resizable.
-		self.window.minsize(width = 500, height = 300)
+		self.window.minsize(width = 600, height = 400)
 		# Setting the title of the window.
 		self.window.title("Statistics - Quizzable")
 		self.loadMainStats()
@@ -68,7 +68,7 @@ class StatisticsDialog(object):
 		self.statisticsScroll    = tk.Scrollbar(self.statsFrame)
 		self.quizReviewScroll    = tk.Scrollbar(self.statsFrame)
 		# Buttons
-		self.viewGraphsButton    = tk.Button(self.statsFrame, text = "View graphs", padx = 30, pady = 3)
+		self.viewChartsButton    = tk.Button(self.statsFrame, text = "View charts", padx = 30, pady = 3)
 		self.redoQuizButton      = tk.Button(self.statsFrame, text = "Redo quiz", padx = 30, pady = 3)
 		
 		# Positioning the elements in the frame
@@ -81,17 +81,67 @@ class StatisticsDialog(object):
 		self.latestResultsScroll.grid(row = 1, column = 1, rowspan = 2, sticky = tk.N+tk.S)
 		self.statisticsScroll.grid(row = 1, column = 3, sticky = tk.N+tk.S)
 		self.quizReviewScroll.grid(row = 1, column = 5, sticky = tk.N+tk.S)
-		self.viewGraphsButton.grid(row = 2, column = 2, columnspan = 2)
+		self.viewChartsButton.grid(row = 2, column = 2, columnspan = 2)
 		self.redoQuizButton.grid(row = 2, column = 4, columnspan = 2)
 		
 		# End of the frame.
 		self.statsFrame.grid(row = 1, column = 0, columnspan = 4, sticky = tk.N+tk.S+tk.E+tk.W)
 		
 	def applyFilters(self):
+		# This is run upon clicking the "Apply Filters" button.
+		# This function gets the currently selected filters from the gui and then will apply those filters to the statistics.
 		pass
 	
-	def loadGraphs():
+	def unloadMainStats(self):
+		# This unloads all the main statistics view, ready to replace it with the charts in the same window shell.
+		
+		# Destroying the elements.
+		self.filterBySubjectComboBox.destroy()
+		self.filterByExamBoardComboBox.destroy()
+		self.filterByDifficultyComboBox.destroy()
+		self.applyFiltersButton.destroy()
+		self.latestResultsLabel.destroy()
+		self.statisticsLabel.destroy()
+		self.quizReviewLabel.destroy()
+		self.latestResultsList.destroy()
+		self.statisticsList.destroy()
+		self.quizReviewList.destroy()
+		self.latestResultsScroll.destroy()
+		self.statisticsScroll.destroy()
+		self.quizReviewScroll.destroy()
+		self.viewChartsButton.destroy()
+		self.redoQuizButton.destroy()
+		self.statsFrame.destroy()
+		
+		# Resetting the grid configuration
+		self.window.grid_columnconfigure(0, weight = 0)
+		self.window.grid_columnconfigure(1, weight = 0)
+		self.window.grid_columnconfigure(2, weight = 0)
+		self.window.grid_columnconfigure(3, weight = 0)
+		self.window.grid_rowconfigure(0, weight = 0)
+		self.window.grid_rowconfigure(1, weight = 0)
+	
+	def loadCharts(self):
+		# This will load in the charts screen into this window upon clicking the "View charts" button.
+		
+		# The large header text
+		self.chartsHeaderText = tk.Label(self.window, text = "Charts view")
+		
+		# The canvas object, on which the charts will be drawn.
+		self.chartCanvas = tk.Canvas(self.window)
+		self.miscStatsLabel = tk.Label(self.window, text = "")
+		self.goBackToMainStatsButton = tk.Button(self.window, text = "")
+		
+		# The positioning of the elements.
+		self.chartsHeaderText.grid(row = 0, column = 0)
+		self.chartCanas.grid(row = 1, column = 0)
+		self.miscStasLabel.grid(row = 0, column = 1, rowspan = 2)
+	
+	def unloadCharts(self):
+		# This unloads the charts and goes back to the main statistics view.
 		pass
 	
 	def redoQuiz(self):
+		# This is called when the user clicks the "Redo Quiz" button.
+		# It will open the quiz window with the currently selected quiz on this window.
 		pass
