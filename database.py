@@ -6,14 +6,36 @@ import pyodbc
 
 class DatabaseManager(object):
 	def __init__(self, filename):
+		# This works out the filepath of the directory that this file is stored in, then it adds the filename of the database to the end.
 		self.filepath = os.path.join(os.path.dirname(__file__), filename)
+		# Logs the database location which was generated above.
 		print("Database Path", self.filepath)
+		# Connects to the database, using the pyodbc module and its Microsoft Access Driver.
 		self.dbcon = pyodbc.connect("Driver={Microsoft Access Driver (*.mdb, *.accdb)}; Dbq="+self.filepath+";")
+		# The cursor allows you to execute SQL commands on the database.
 		self.dbCursor = self.dbcon.cursor()
 	
+	""" - Replaced with new execute statement that allows you to run select statements properly.
 	def execute(self, *command):
+		# This executes the given SQL command given as many arguments as necessary.
 		self.dbCursor.execute(*command)
+		# This applies the statement to the actual database file.
 		self.dbcon.commit()
-
+	"""
+	
+	def execute(self, *command):
+		# This executes the given SQL command given as many arguments as necessary.
+		value = self.dbCursor.execute(*command)
+		# Returns the results of the command.
+		try:
+			# This tries to get the results from a select statement. If a non-select statement has been executed, this raises an exception.
+			return self.dbCursor.fetchall()
+		except:
+			# This catches the error thrown by the .fetchall() if the command yielded no output.
+			# The line below applies the statement's changes to the database file.
+			self.dbcon.commit()
+			# This value is returned from the .execute(*command) line, and usually is the amount of rows modified by a command.
+			return value
+	
 	def dispose(self):
 		self.dbcon.close()
