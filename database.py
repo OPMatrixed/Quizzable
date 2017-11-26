@@ -48,3 +48,4 @@ class DatabaseManager(object):
     def dispose(self) -> None:
         """Run when this object needs to be destroyed, usually on application exit."""
         self.dbcon.close()
+        print("Database connection closed.")

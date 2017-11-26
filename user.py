@@ -3,7 +3,7 @@
 # The class handles saving/loading users from database, changing user settings, and creating new users.
 
 class User(object):
-    def __init__(self, databaseManager, id: int = -1, username: str, timeConfig: int, defaultExamBoard: int) -> None:
+    def __init__(self, databaseManager, id: int, username: str, timeConfig: int, defaultExamBoard: int) -> None:
         """This is the function that instantiates the User object."""
         self.dbm = databaseManager
         self.id = id

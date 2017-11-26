@@ -53,11 +53,11 @@ class UserCreateDialog(object):
         # The actual entry fields for the user settings.
         self.usernameEntry = tk.Entry(self.window, width = 20)
         # Examboard entry is a combobox. It gets the options from the examboards tabel in the database.
-        self.defaultExamBoardEntry = ttk.Combobox(self.window, values=["No preference"])
+        self.defaultExamBoardEntry = ttk.Combobox(self.window, values = ["No preference"])
         # The three timer button options represent three different timer settings. These are the only three, so I used buttons rather than drop down.
-        self.timerButton1 = tk.Button(self.window, text = "No timer (easy)")
-        self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)")
-        self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)")
+        self.timerButton1 = tk.Button(self.window, text = "No timer (easy)", command = lambda: self.changeTimeSetting(0))
+        self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)", command = lambda: self.changeTimeSetting(1))
+        self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)", command = lambda: self.changeTimeSetting(2))
         # Each of the buttons needs its own column, so the username and examboard entries are spread over three columns, using columnspan = 3.
         self.usernameEntry.grid(row = 1, column = 1, columnspan = 3, sticky = tk.W+tk.E)
         self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky = tk.W+tk.E)
@@ -68,13 +68,31 @@ class UserCreateDialog(object):
         
         # This button finalises the user and will save the users details to the database, and select the user, brining the actual user straight to the quiz browser.
         self.completeButton = tk.Button(self.window, text = "Create User", command = self.finish)
-        self.completeButton.grid(row = 4, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
+        self.completeButton.grid(row = 4, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
+    
+    def changeTimeSetting(self, setting):
+        self.timeSetting = setting
+        if(setting == 0):
+            self.timerSettingsLabel.config(text = "No timer")
+        elif(setting == 1):
+            self.timerSettingsLabel.config(text = "Long timer")
+        else:
+            self.timerSettingsLabel.config(text = "Short timer")
     
     def finish(self) -> None:
         """
         This is called when the user clicks the "Create User" button in the bottom right of the dialog.
         This adds the user to the database, selects the user as the current user, and changes the main window to the quiz browser.
         """
+        # TODO: ADD VALIDATION
+        username = self.usernameEntry.get()
+        defaultExamBoard = self.defaultExamBoardEntry.get()
+        defaultExamBoardID = -1
+        if(defaultExamBoard != "" and defaultExamBoard != "No preference"):
+            query = self.parent.database.execute("SELECT `ExamboardID` FROM `Examboards` WHERE `EName`=?;", defaultExamBoard)
+            defaultExamBoardID = query[0][0]
+        self.parent.currentUser = User(self.parent.database, -1, username, self.timeSetting, defaultExamBoardID)
+        
         import mainmenu
         # If the user is on the login screen, turn it to the quiz browser screen.
         if(self.parent.state == mainmenu.MainWindowStates.login):

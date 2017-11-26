@@ -118,12 +118,22 @@ class MainApp(object):
         self.tk.grid_rowconfigure(7, weight = 1)
         # Login screen heading text
         self.loginLabel = tk.Label(self.tk, text="User Selection", font=headerFont)
+        
+        userList = []
+        # This queries the database to get the names
+        userQueryResults = self.database.execute("SELECT `Username` FROM `Users`;")
+        if(not userQueryResults):
+            for i in userQueryResults:
+                userList.append(i[0])
+        else:
+            userList = ["No users created, click \"Create User\""]
+        
         # The user selection combobox (drop-down list).
-        self.loginComboUser = ttk.Combobox(self.tk, state="readonly", values=["No users created, click \"Create User\""])
+        self.loginComboUser = ttk.Combobox(self.tk, state = "readonly", values = userList)
         # The "login" button, which selects the user currently selected in the combobox.
-        self.loginSelectUserButton = tk.Button(self.tk, text="Select User", bg="#EAEAEA", border=3, relief=tk.GROOVE, command = self.selectUser)
+        self.loginSelectUserButton = tk.Button(self.tk, text = "Select User", bg = "#EAEAEA", border = 3, relief = tk.GROOVE, command = self.selectUser)
         # The create user button, which launches the Create User box.
-        self.loginCreateUserButton = tk.Button(self.tk, text="Create User", bg="#DFDFDF", border=3, relief=tk.GROOVE, command = lambda: userGui.UserCreateDialog(self.tk, self))
+        self.loginCreateUserButton = tk.Button(self.tk, text = "Create User", bg = "#DFDFDF", border = 3, relief = tk.GROOVE, command = lambda: userGui.UserCreateDialog(self.tk, self))
         # Positioning the above elements in the grid layout.
         self.loginLabel.grid(row = 1, column = 1)
         self.loginComboUser.grid(row = 3, column = 1, sticky=tk.W+tk.E+tk.N+tk.S)
@@ -157,11 +167,22 @@ class MainApp(object):
     def selectUser(self) -> None:
         """
         Called on clicking the select user button on the login screen.
-        TODO: Get user from combobox
-            Select that user
-        This code is only temporary, so it allows you to see the app without the functionality being added yet.
         """
+        # Gets the text from the Combobox.
+        username = self.loginComboUser.get()
+        if(not username): # Presense check 
+            return
+        if(username == "No users created, click \"Create User\""): # Rogue value check
+            return
+        # Imports the user module from the base directory.
+        import user
+        # This gets the user details from the database.
+        userDetails = self.database.execute('SELECT * FROM `Users` WHERE `Username`=?;', username)[0]
+        # Creates the user object and stores it as a variable in the application object.
+        self.currentUser = user.User(self.database, *userDetails)
+        # Unloads the elements on the screen
         self.unloadLoginScreen()
+        # Loads the quiz browser screen.
         self.loadQuizBrowserScreen()
     
     def loadQuizBrowserScreen(self) -> None:
@@ -352,10 +373,20 @@ def startGUI() -> None:
     # Creates the window
     master = tk.Tk()
     # This loads the MainApp class and loads all the graphical elements.
-    MainApp(master)
+    app = MainApp(master)
     print("Finished building GUI.")
-    # This makes the program continue running, as it is an interface-based program and needs to stay running for the user to use the application.
-    master.mainloop()
+    # The following try-except blocks are to catch any errors during runtime so the program can continue running to close the database connection correctly.
+    # This is to try and prevent corrupting the database or failing to save any data that should have been saved during a session of application use.
+    try:
+        # This line makes the program continue running, as it is an interface-based program and needs to stay running for the user to use the application.
+        master.mainloop()
+    except:
+        # The following code gets the error message and prints it as an error.
+        import traceback
+        import sys
+        print(traceback.format_exc(), sys.stderr)
+    # This will run even if the app ends in a crash, as most errors should be caught above.
+    app.database.dispose()
 
 if(__name__=="__main__"):
     # This will only run if this file is run directly. It will not run if imported as a module.
