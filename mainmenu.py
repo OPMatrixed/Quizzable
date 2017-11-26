@@ -5,6 +5,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
 import tkinter.filedialog as tkfile
+import tkinter.messagebox as tkmb
 
 # This imports the database file from the same directory as this file.
 import database
@@ -39,13 +40,34 @@ class MainApp(object):
         # This sets the state of the application, to keep track of what's on the main window.
         self.state = MainWindowStates.login
         # This gets changed once a user is selected.
-        self.selectedUser = None
+        self.currentUser = None
         # This creates the database connection.
         self.database = database.DatabaseManager("QuizAppDatabase.accdb")
         # This creates the menu bar at the top of the window.
         self.createTitleBarMenu()
         # This loads the login screen on the main window.
         self.loadLoginScreen()
+        
+        self.examboardDictionary = {}
+        # This queries the database to get the names of the examboards.
+        examboardQueryResults = self.database.execute("SELECT * FROM `Examboards`;")
+        if(examboardQueryResults):
+            for i in examboardQueryResults:
+                self.examboardDictionary[i[0]] = i[1]
+        
+        self.subjectDictionary = {}
+        # This queries the database to get the names of the subjects.
+        subjectQueryResults = self.database.execute("SELECT * FROM `Subjects`;")
+        if(subjectQueryResults):
+            for i in subjectQueryResults:
+                self.subjectDictionary[i[0]] = i[1]
+    
+    def userSettings(self):
+        """This launches the user settings window, if there is a user logged in."""
+        if(self.currentUser):
+            userGui.UserSettingsDialog(self.tk, self)
+        else:
+            tkmb.showerror("User error", "No user currently selected, can't change user settings.")
     
     def createTitleBarMenu(self) -> None: # TODO: Only show if there is a user selected.
         """
@@ -60,15 +82,12 @@ class MainApp(object):
         # Creating the menu object.
         self.menuBar = tk.Menu(self.tk)
         
-        # This has the "Application" drop-down menu, which only contains one option at the moment.
         # tearoff = 0 means that the drop-down can't be "ripped off", and be turned into its own little mini-dialog window.
-        self.appMenu = tk.Menu(self.menuBar, tearoff = 0)
-        self.appMenu.add_command(label = "Exit", command = self.endApplication)
-        
-        # This code is the "User" drop-down menu, of which the buttons are only active if a user is selected.
+        # This code is the "User" drop-down menu.
         self.userMenu = tk.Menu(self.menuBar, tearoff = 0)
+        # userGui.UserCreateDialog() makes a Create User window, and it is passed as a lambda statement as arguments have to be passed.
         self.userMenu.add_command(label = "Create New User", command = lambda: userGui.UserCreateDialog(self.tk, self))
-        self.userMenu.add_command(label = "User Settings",   command = lambda: userGui.UserSettingsDialog(self.tk, self))
+        self.userMenu.add_command(label = "User Settings",   command = self.userSettings)
         self.userMenu.add_command(label = "Change User") # TODO
         
         # This is the subjects & exam boards drop-down.
@@ -85,7 +104,6 @@ class MainApp(object):
         self.menuBar.add_cascade(label = "Quiz Management",        menu = self.quizMenu)
         self.menuBar.add_cascade(label = "User",                   menu = self.userMenu)
         self.menuBar.add_cascade(label = "Subjects & Exam Boards", menu = self.subjectsAndExamBoardsMenu)
-        self.menuBar.add_cascade(label = "Application",            menu = self.appMenu)
         
         self.menuBar.add_command(label = "Statistics", command = lambda: statsGui.StatisticsDialog(self.tk, self))
         
@@ -120,9 +138,9 @@ class MainApp(object):
         self.loginLabel = tk.Label(self.tk, text="User Selection", font=headerFont)
         
         userList = []
-        # This queries the database to get the names
+        # This queries the database to get the usernames of all the users.
         userQueryResults = self.database.execute("SELECT `Username` FROM `Users`;")
-        if(not userQueryResults):
+        if(userQueryResults):
             for i in userQueryResults:
                 userList.append(i[0])
         else:
@@ -270,12 +288,25 @@ class MainApp(object):
         self.quizListBoxExamBoard.grid  (row = 1, column = 2, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizListBoxBestAttempt.grid(row = 1, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
         
-        for i in range(200): # This is an example entry generator for testing the quiz browser.
-            # This is a temporary feature for testing the application's design.
-            self.quizListBoxNames.insert      (tk.END, "N"+str(i))
-            self.quizListBoxSubject.insert    (tk.END, "S"+str(i))
-            self.quizListBoxExamBoard.insert  (tk.END, "E"+str(i))
-            self.quizListBoxBestAttempt.insert(tk.END, "B"+str(i))
+        quizQueryResult = self.database.execute("SELECT * FROM `Quizzes`;")
+        quizIDs = []
+        quizNames = []
+        quizSubjects = []
+        quizExamboards = []
+        quizDifficulties = []
+        quizTags = {}
+        for i in quizQueryResult:
+            quizIDs.append(i[0])
+            quizNames.append(i[1])
+            quizSubjects.append(i[2])
+            quizExamboards.append(i[3])
+            quizDifficulties.append(i[6])
+            quizTags[i[0]] = i[5].split(",")
+            
+            self.quizListBoxNames.insert(tk.END, i[1])
+            self.quizListBoxSubject.insert(tk.END, self.subjectDictionary[i[2]])
+            self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary[i[3]])
+            self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
         
         self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky=tk.W+tk.E+tk.N+tk.S)
         # End of lists frame.
@@ -289,17 +320,17 @@ class MainApp(object):
         self.quizListSidePanel = tk.Frame(self.tk)
         self.quizListSidePanel.grid_columnconfigure(0, weight = 1)
         # Text fields, these will be updated whenever a new quiz is selected on the list.
-        self.quizListSideName           = tk.Label(self.quizListSidePanel, text = "<Quiz Name>")
-        self.quizListSideSubject        = tk.Label(self.quizListSidePanel, text = "<Quiz Subject>")
-        self.quizListSideExamboard      = tk.Label(self.quizListSidePanel, text = "<Quiz Examboard>")
+        self.quizListSideName = tk.Label(self.quizListSidePanel, text = "<Quiz Name>")
+        self.quizListSideSubject = tk.Label(self.quizListSidePanel, text = "<Quiz Subject>")
+        self.quizListSideExamboard = tk.Label(self.quizListSidePanel, text = "<Quiz Examboard>")
         self.quizListSideTotalQuestions = tk.Label(self.quizListSidePanel, text = "<Total number of questions>")
-        self.quizListSideBestAttempt    = tk.Label(self.quizListSidePanel, text = "<Quiz Best Attempt>")
+        self.quizListSideBestAttempt = tk.Label(self.quizListSidePanel, text = "<Quiz Best Attempt>")
         # Positioning of the text fields.
-        self.quizListSideName.grid          (row = 0, column = 0)
-        self.quizListSideSubject.grid       (row = 1, column = 0)
-        self.quizListSideExamboard.grid     (row = 2, column = 0)
+        self.quizListSideName.grid(row = 0, column = 0)
+        self.quizListSideSubject.grid(row = 1, column = 0)
+        self.quizListSideExamboard.grid(row = 2, column = 0)
         self.quizListSideTotalQuestions.grid(row = 3, column = 0)
-        self.quizListSideBestAttempt.grid   (row = 4, column = 0)
+        self.quizListSideBestAttempt.grid(row = 4, column = 0)
         
         # End of Frame
         self.quizListSidePanel.grid(row = 2, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
@@ -314,22 +345,22 @@ class MainApp(object):
         self.quizListSideButtonFrame.grid_rowconfigure(3, weight = 1)
         # The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
         self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz)
-        self.quizListSideEditQuizButton   = tk.Button(self.quizListSideButtonFrame, text =   "Edit Quiz", padx = 18, pady = 8)
+        self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8)
         self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8)
-        self.quizListSideDelteQuizButton  = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8)
+        self.quizListSideDelteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8)
         # The positioning for the buttons above.
         self.quizListSideLaunchQuizButton.grid(row = 0, column = 0)
-        self.quizListSideEditQuizButton.grid  (row = 1, column = 0)
+        self.quizListSideEditQuizButton.grid(row = 1, column = 0)
         self.quizListSideExportQuizButton.grid(row = 2, column = 0)
-        self.quizListSideDelteQuizButton.grid (row = 3, column = 0)
+        self.quizListSideDelteQuizButton.grid(row = 3, column = 0)
         # Placing the button frame.
         self.quizListSideButtonFrame.grid(row = 3, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
     def scrollbarCommand(self, *args) -> None:
         """This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved."""
-        self.quizListBoxNames.yview      (*args)
-        self.quizListBoxSubject.yview    (*args)
-        self.quizListBoxExamBoard.yview  (*args)
+        self.quizListBoxNames.yview(*args)
+        self.quizListBoxSubject.yview(*args)
+        self.quizListBoxExamBoard.yview(*args)
         self.quizListBoxBestAttempt.yview(*args)
     
     def scrollOnList(self, *args) -> None:
@@ -338,9 +369,9 @@ class MainApp(object):
         and adjusts the other lists and the scrollbar based on how much is scrolled.
         """
         self.quizListBoxScrollBar.set(args[0], args[1])
-        self.quizListBoxNames.yview      ("moveto", args[0])
-        self.quizListBoxSubject.yview    ("moveto", args[0])
-        self.quizListBoxExamBoard.yview  ("moveto", args[0])
+        self.quizListBoxNames.yview("moveto", args[0])
+        self.quizListBoxSubject.yview("moveto", args[0])
+        self.quizListBoxExamBoard.yview("moveto", args[0])
         self.quizListBoxBestAttempt.yview("moveto", args[0])
     
     def launchQuiz(self) -> None:

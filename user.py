@@ -11,17 +11,22 @@ class User(object):
         self.timeConfig = timeConfig
         self.defaultExamBoard = defaultExamBoard
         if(id == -1):
-            self.addUserToDatabase()
+            self.addToDatabase()
     
     def addToDatabase(self):
         """This adds this user to the database."""
-        # TODO: Create database entry and set self.id to the auto-generated id.
-        self.dbm.execute("INSERT INTO users (Username, TimeConfig, DefaultBoard) VALUES (?,?,?);", self.username, self.timeConfig, self.defaultExamBoard)
-        # TODO: Test and get generated user id.
+        # This adds the user record.
+        if(self.defaultExamBoard == -1):
+            self.dbm.execute("INSERT INTO users (Username, TimeConfig) VALUES (?,?);", self.username, self.timeConfig)
+        else:
+            self.dbm.execute("INSERT INTO users (Username, TimeConfig, DefaultBoardID) VALUES (?,?,?);", self.username, self.timeConfig, self.defaultExamBoard)
+        # This gets the inserted record's UserID.
+        lastRecord = self.dbm.execute("SELECT @@IDENTITY;")
+        self.id = lastRecord[0][0]
         
     def savePreferences(self, timeConfig: int = -1, defaultExamBoard: int = -1):
         """
-        This allows the software to change the user's settings and update the database if they have changed.
+        This allows the application to change the user's settings and update the database if they have changed.
         Arguments:
         timeConfig: Integer between -1 and 2 inclusive (-1 is the rogue value to indicate no change).
         defaultExamBoard: Integer (-1 is the rogue value to indicate no change).

@@ -4,6 +4,12 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
+import tkinter.messagebox as tkmb
+import re
+
+import user
+
+usernameRegex = re.compile('[^a-zA-Z0-9\-_ ]')
 
 class UserCreateDialog(object):
     def __init__(self, toplevel: tk.Tk, parent) -> None:
@@ -16,6 +22,8 @@ class UserCreateDialog(object):
         # This creates the window. padx and pady here add 5 pixels padding horizontally and vertically respectively
         # This is to stop the widgets on the window from touching the edges of the window, which doesn't look that good.
         self.window = tk.Toplevel(toplevel, padx = 5, pady = 5)
+        # This makes this window always render above the base window.
+        self.window.transient(self.toplevel)
         # Dimensions of the window: 500 pixels wide by 300 pixels high.
         self.window.geometry("500x300")
         # The minimum dimensions of the window, as this window is resizable.
@@ -36,24 +44,32 @@ class UserCreateDialog(object):
         self.window.grid_rowconfigure(4, weight = 1)
         
         # The header text font
-        self.headerFont = tkfont.Font(family="Helvetica", size=28)
+        self.headerFont = tkfont.Font(family = "Helvetica", size = 28)
         # The header itself.
-        self.headerLabel = tk.Label(self.window, text = "Create User", font=self.headerFont)
+        self.headerLabel = tk.Label(self.window, text = "Create User", font = self.headerFont)
         self.headerLabel.grid(row = 0, column = 0, columnspan=2)
         
         # The Labels/Text widgets to the left of the entry boxes/buttons with the name of the input expected on the right.
         self.usernameLabel = tk.Label(self.window, text = "Username:")
         self.defaultExamBoardLabel = tk.Label(self.window, text = "Default exam board:")
-        self.timerSettingsLabel = tk.Label(self.window, text = "Timer settings:  NO TIMER")
+        self.timerSettingsLabel = tk.Label(self.window, text = "Timer setting:  No timer")
+        self.timeSetting = 0
         # These go on the first column (column 0)
         self.usernameLabel.grid(row = 1, column = 0)
         self.defaultExamBoardLabel.grid(row = 2, column = 0)
         self.timerSettingsLabel.grid(row = 3, column = 0)
         
+        examboardList = ["No preference"]
+        # This queries the database to get the names of the examboards
+        examboardQueryResults = self.parent.database.execute("SELECT `EName` FROM `Examboards`;")
+        if(examboardQueryResults):
+            for i in examboardQueryResults:
+                examboardList.append(i[0])
+        
         # The actual entry fields for the user settings.
         self.usernameEntry = tk.Entry(self.window, width = 20)
         # Examboard entry is a combobox. It gets the options from the examboards tabel in the database.
-        self.defaultExamBoardEntry = ttk.Combobox(self.window, values = ["No preference"])
+        self.defaultExamBoardEntry = ttk.Combobox(self.window, values = examboardList)
         # The three timer button options represent three different timer settings. These are the only three, so I used buttons rather than drop down.
         self.timerButton1 = tk.Button(self.window, text = "No timer (easy)", command = lambda: self.changeTimeSetting(0))
         self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)", command = lambda: self.changeTimeSetting(1))
@@ -73,25 +89,51 @@ class UserCreateDialog(object):
     def changeTimeSetting(self, setting):
         self.timeSetting = setting
         if(setting == 0):
-            self.timerSettingsLabel.config(text = "No timer")
+            self.timerSettingsLabel.config(text = "Timer setting: No timer")
         elif(setting == 1):
-            self.timerSettingsLabel.config(text = "Long timer")
+            self.timerSettingsLabel.config(text = "Timer setting: Long timer")
         else:
-            self.timerSettingsLabel.config(text = "Short timer")
+            self.timerSettingsLabel.config(text = "Timer setting: Short timer")
     
     def finish(self) -> None:
         """
         This is called when the user clicks the "Create User" button in the bottom right of the dialog.
         This adds the user to the database, selects the user as the current user, and changes the main window to the quiz browser.
         """
-        # TODO: ADD VALIDATION
-        username = self.usernameEntry.get()
+        
+        # This gets the username from the entry box, and removes whitespace at the start and the end of the string.
+        username = self.usernameEntry.get().strip()
+        # Length/Presence check
+        if(len(username) < 3):
+            # Username too short, display an error message.
+            tkmb.showerror("Username error", "Username is too short, it should be between 3 and 20 characters inclusive.\nSpaces at the start and end of the username are ignored.", parent = self.window)
+            return
+        if(len(username) > 20):
+            # Username too long, display an error message.
+            tkmb.showerror("Username error", "Username is too long, it should be between 3 and 20 characters inclusive.", parent = self.window)
+            return
+        # This removes invalid characters with the regular expression defined at the top of this file.
+        reducedUsername = usernameRegex.sub("", username)
+        if(reducedUsername != username):
+            # Username has invalid characters, display an error message.
+            tkmb.showerror("Username error", "Username contains invalid characters, it should only contain english letters, numbers, spaces, underscores and dashes.", parent = self.window)
+            return
+        # Check to see if username is already in use.
+        queryResult = self.parent.database.execute("SELECT * FROM `Users` WHERE `Username`=?;", username)
+        if(queryResult):
+            # Username is already in use, display an error message.
+            print("Username already in use.")
+            tkmb.showerror("Username error", "Username is already in use.", parent = self.window)
+            return
+        
         defaultExamBoard = self.defaultExamBoardEntry.get()
         defaultExamBoardID = -1
+        # The following gets the default exam board setting.
         if(defaultExamBoard != "" and defaultExamBoard != "No preference"):
             query = self.parent.database.execute("SELECT `ExamboardID` FROM `Examboards` WHERE `EName`=?;", defaultExamBoard)
             defaultExamBoardID = query[0][0]
-        self.parent.currentUser = User(self.parent.database, -1, username, self.timeSetting, defaultExamBoardID)
+        # This creates the user object, which automatically adds the user to the database.
+        self.parent.currentUser = user.User(self.parent.database, -1, username, self.timeSetting, defaultExamBoardID)
         
         import mainmenu
         # If the user is on the login screen, turn it to the quiz browser screen.
@@ -131,22 +173,29 @@ class UserSettingsDialog(object):
         self.window.grid_rowconfigure(4, weight = 1)
         
         # The header text font
-        self.headerFont = tkfont.Font(family="Helvetica", size=28)
+        self.headerFont = tkfont.Font(family = "Helvetica", size = 28)
         # The header itself.
         self.headerLabel = tk.Label(self.window, text = "User Settings", font=self.headerFont)
         # The Labels/Text widgets to the left of the entry boxes/buttons with the name of the input expected on the right.
-        self.usernameLabel = tk.Label(self.window, text = "<Username here>")
+        self.usernameLabel = tk.Label(self.window, text = "Username: " + self.parent.currentUser.username)
         self.defaultExamBoardLabel = tk.Label(self.window, text = "Default exam board:")
-        self.timerSettingsLabel = tk.Label(self.window, text = "Timer settings:  NO TIMER")
+        self.timerSettingsLabel = tk.Label(self.window, text = "Timer settings:  No Timer")
         # These go on the first column (column 0)
         self.headerLabel.grid(row = 0, column = 0, columnspan=2)
         self.usernameLabel.grid(row = 1, column = 0)
         self.defaultExamBoardLabel.grid(row = 2, column = 0)
         self.timerSettingsLabel.grid(row = 3, column = 0)
         
+        examboardList = ["No preference"]
+        # This queries the database to get the names of the examboards
+        examboardQueryResults = self.parent.database.execute("SELECT `EName` FROM `Examboards`;")
+        if(examboardQueryResults):
+            for i in examboardQueryResults:
+                examboardList.append(i[0])
+        
         # The actual entry fields for the user settings.
         # Examboard entry is a combobox. It gets the options from the examboards tabel in the database.
-        self.defaultExamBoardEntry = ttk.Combobox(self.window, values=["No preference"])
+        self.defaultExamBoardEntry = ttk.Combobox(self.window, values = examboardList)
         # The three timer button options represent three different timer settings. These are the only three, so I used buttons rather than drop down.
         self.timerButton1 = tk.Button(self.window, text = "No timer (easy)")
         self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)")
@@ -154,9 +203,9 @@ class UserSettingsDialog(object):
         # Each of the buttons needs its own column, so the examboard entry is spread over three columns, using columnspan = 3.
         self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky = tk.W+tk.E)
         # The three buttons are all on the same row.
-        self.timerButton1.grid(row = 3, column = 1, sticky=tk.W+tk.E)
-        self.timerButton2.grid(row = 3, column = 2, sticky=tk.W+tk.E)
-        self.timerButton3.grid(row = 3, column = 3, sticky=tk.W+tk.E)
+        self.timerButton1.grid(row = 3, column = 1, sticky = tk.W+tk.E)
+        self.timerButton2.grid(row = 3, column = 2, sticky = tk.W+tk.E)
+        self.timerButton3.grid(row = 3, column = 3, sticky = tk.W+tk.E)
         
         # This button will run the self.finish() method, and will save the user settings in the database.
         self.completeButton = tk.Button(self.window, text = "Update user settings", command = self.finish)
