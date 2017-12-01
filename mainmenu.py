@@ -21,7 +21,7 @@ class MainWindowStates:
 
 class MainApp(object):
     appName = "Quizzable"
-    appVersion = "Alpha v0.2"
+    appVersion = "Alpha v0.3"
     def __init__(self, tkobj: tk.Tk) -> None:
         """
         This method is called when MainApp is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
@@ -394,7 +394,7 @@ class MainApp(object):
     
     def endApplication(self) -> None:
         """Called when the application is ending."""
-        self.database.dispose()
+		print("Application closing...")
         self.state = MainWindowStates.closing
         self.tk.destroy()
 
