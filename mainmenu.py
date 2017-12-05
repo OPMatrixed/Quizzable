@@ -377,6 +377,19 @@ class MainApp(object):
     def launchQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
         import quiz, quizGui
+        n = -1
+        if(self.quizListBoxNames.curselection()):
+            n = self.quizListBoxNames.curselection()[0]
+        elif(self.quizListBoxSubject.curselection()):
+            n = self.quizListBoxSubject.curselection()[0]
+        elif(self.quizListBoxExamBoard.curselection()):
+            n = self.quizListBoxExamBoard.curselection()[0]
+        elif(self.quizListBoxBestAttempt.curselection()):
+            n = self.quizListBoxBestAttempt.curselection()[0]
+        else:
+            tkmb.showerror("Launch quiz error", "No quiz selected to launch, please select a quiz by clicking on one from the list.")
+            return
+        print(quizNames[n])
         quiz = quiz.Quiz("Example Quiz", ["An Example"], "Example Subject", "Example Exam Board", 1, [])
         quizGui.ActiveQuizDialog(self.tk, self, quiz)
     
@@ -394,7 +407,7 @@ class MainApp(object):
     
     def endApplication(self) -> None:
         """Called when the application is ending."""
-		print("Application closing...")
+        print("Application closing...")
         self.state = MainWindowStates.closing
         self.tk.destroy()
 

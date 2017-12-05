@@ -6,14 +6,28 @@ as well as importing and exporting quizzes into a non-database format.
 """
 
 class Question(object):
-    def __init__(self, question: str, correctAnswer: str, otherAnswers: list, id: int, hint: str, help: str) -> None:
+    def __init__(self, quizID: int, question: str, correctAnswer: str, otherAnswers: list, id: int, hint: str, help: str) -> None:
         """This is the Question object creation method, and it expects all arguments listed above."""
+        self.quizID = quizID
         self.question = question
         self.correctAnswer = correctAnswer
         self.wrongAnswers = otherAnswers
         self.id = id
         self.hint = hint
         self.help = help
+        # If the question doesn't have an ID, add it to the database.
+        if(id == -1):
+            # As a different amount of wrong answers can be entered into records, the SQL statement should change depending on how many wrong
+            # answers there are. If there is one wrong answer, don't modify the original statement.
+            # If there are two or three wrong answers, add their respective column names to the SQL statement.
+            answerAdditionString = ""
+            if(len(self.wrongAnswers) == 3):
+                answerAdditionString = " Answer3, Answer4,"
+            elif(len(self.wrongAnswers) == 2):
+                answerAdditionString = " Answer3,"
+            # The "*self.wrongAnswers" on the following line goes through each element in the list, and passes each as a separate argument.
+            self.dbm.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2,"+answerAdditionString+" Hint, Help) VALUES (?,?,?,?,?,?)",
+                    self.quizID, self.question, self.correctAnswer, self.correctAnswer, *self.wrongAnswers, self.hint, self.help)
     
     def getShuffledAnswers(self) -> list:
         """
@@ -32,22 +46,23 @@ class Question(object):
         return answers, index
 
 class Quiz(object):
-    def __init__(self, name: str, tags: list, subject: int, examBoard: int, difficulty: int, questions: list = []) -> None:
+    def __init__(self, databaseManager, name: str, tags: list, subject: int, examBoard: int, difficulty: int, questions: list = []) -> None:
         """
         Quiz object creation method, all parameters except the questions are required,
         questions can be added later through the preferred addQuestion method.
         """
+        self.dbm = databaseManager
         self.name = name
         self.tags = tags
         self.subject = subject
-        self.difficulty = difficulty # TODO: This is currently a string, later it will be an integer id.
-        self.examBoard = examBoard # TODO: This is currently a string, later it will be an integer id.
+        self.difficulty = difficulty
+        self.examBoard = examBoard
         self.questions = questions
         
     def addQuestion(self, question: str, correctAnswer: str, otherAnswers: list) -> None:
         """This method adds a question to the quiz object based on the parameters given."""
-        id = 0 # TODO: get id from database index.
-        q  = Question(question, correctAnswer, otherAnswers, id)
+        id = -1 # TODO: get id from database index.
+        q  = Question(self.dbm, question, correctAnswer, otherAnswers, id)
         self.questions.append(q)
     
     def save(self) -> None:
