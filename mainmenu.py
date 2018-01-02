@@ -26,7 +26,7 @@ class MainApp(object):
         """
         This method is called when MainApp is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
         Arguments:
-        tkobj : tk.Tk  (The window object)
+        tkobj is the window object
         """
         self.tk = tkobj
         # This sets the default dimensions of the window, 800 pixels wide by 600 pixels high.
@@ -288,27 +288,29 @@ class MainApp(object):
         self.quizListBoxExamBoard.grid  (row = 1, column = 2, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizListBoxBestAttempt.grid(row = 1, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
         
+        # This loads all the quiz records from the database, but ignores each quiz's questions.
         quizQueryResult = self.database.execute("SELECT * FROM `Quizzes`;")
-        quizIDs = []
-        quizNames = []
-        quizSubjects = []
-        quizExamboards = []
-        quizDifficulties = []
-        quizTags = {}
+        self.quizIDs = []
+        self.quizNames = []
+        self.quizSubjects = []
+        self.quizExamboards = []
+        self.quizDifficulties = []
+        self.quizTags = {}
+        # This goes through each quiz in the database and adds it to these lists which will be used in searching/filtering.
         for i in quizQueryResult:
-            quizIDs.append(i[0])
-            quizNames.append(i[1])
-            quizSubjects.append(i[2])
-            quizExamboards.append(i[3])
-            quizDifficulties.append(i[6])
-            quizTags[i[0]] = i[5].split(",")
-            
+            self.quizIDs.append(i[0])
+            self.quizNames.append(i[1])
+            self.quizSubjects.append(i[2])
+            self.quizExamboards.append(i[3])
+            self.quizDifficulties.append(i[6])
+            self.quizTags[i[0]] = i[5].split(",") if i[5] else []
+            # This is adds each quiz to each of the lists.
             self.quizListBoxNames.insert(tk.END, i[1])
             self.quizListBoxSubject.insert(tk.END, self.subjectDictionary[i[2]])
             self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary[i[3]])
             self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
         
-        self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky=tk.W+tk.E+tk.N+tk.S)
+        self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky = tk.W+tk.E+tk.N+tk.S)
         # End of lists frame.
         self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
     
@@ -357,7 +359,8 @@ class MainApp(object):
         self.quizListSideButtonFrame.grid(row = 3, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
     def scrollbarCommand(self, *args) -> None:
-        """This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved."""
+        """This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved.
+        This method is called by tkinter (the gui module), so I can't control what arguments are entered."""
         self.quizListBoxNames.yview(*args)
         self.quizListBoxSubject.yview(*args)
         self.quizListBoxExamBoard.yview(*args)
@@ -367,6 +370,7 @@ class MainApp(object):
         """
         This method is called each time the user scrolls (often with the mouse's scroll wheel) with a list in-focus,
         and adjusts the other lists and the scrollbar based on how much is scrolled.
+        This method is called by tkinter (the gui module), so I can't control what arguments are entered.
         """
         self.quizListBoxScrollBar.set(args[0], args[1])
         self.quizListBoxNames.yview("moveto", args[0])
@@ -378,6 +382,7 @@ class MainApp(object):
         """This launches the quiz window for the currently selected quiz."""
         import quiz, quizGui
         n = -1
+        # The following if statements check each list to see if an entry from any of the lists has been selected, and sets the number n to the selected row number.
         if(self.quizListBoxNames.curselection()):
             n = self.quizListBoxNames.curselection()[0]
         elif(self.quizListBoxSubject.curselection()):
@@ -387,11 +392,15 @@ class MainApp(object):
         elif(self.quizListBoxBestAttempt.curselection()):
             n = self.quizListBoxBestAttempt.curselection()[0]
         else:
+            # An error message is shown if there are no rows selected, and this method returns so it doesn't try to load a quiz with id of negative one.
             tkmb.showerror("Launch quiz error", "No quiz selected to launch, please select a quiz by clicking on one from the list.")
             return
-        print(quizNames[n])
-        quiz = quiz.Quiz("Example Quiz", ["An Example"], "Example Subject", "Example Exam Board", 1, [])
-        quizGui.ActiveQuizDialog(self.tk, self, quiz)
+        
+        print("Loading: "+self.quizNames[n]) # A debugging line, to check if the correct quiz is being loaded.
+        # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
+        quiz = quiz.Quiz.getQuiz(self.quizIDs[n], self.database)
+        # This then launches the window, passing the loaded quiz as an argument.
+        quizGui.ActiveQuizDialog(self.tk, self, quiz, self.currentUser)
     
     def importQuizButtonCommand(self) -> None:
         """This function is tied to the import quiz button and the import quiz option on the top menu."""
@@ -432,6 +441,6 @@ def startGUI() -> None:
     # This will run even if the app ends in a crash, as most errors should be caught above.
     app.database.dispose()
 
-if(__name__=="__main__"):
+if(__name__ == "__main__"):
     # This will only run if this file is run directly. It will not run if imported as a module.
     startGUI()
