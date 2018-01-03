@@ -39,10 +39,12 @@ class Question(object):
         It then returns a list of answers and the correct answer's index in that list.
         """
         import random
-        # The [:] part creates a copy of the otherAnswers list, without shuffling the Question object's actual list in-line
+        # The [:] part creates a copy of the otherAnswers list, without it it would just create a reference to the self.otherAnswers list.
         answers = self.otherAnswers[:]
+        # random.shuffle changes the list in-line, as passing the answers list as a parameter just passes a reference to the subroutine.
         random.shuffle(answers)
         index = random.randint(0, len(self.otherAnswers))
+        # This adds the correct answer to the answers list, at the position of the value of 'index'
         answers.insert(index, self.correctAnswer)
         return answers, index
     

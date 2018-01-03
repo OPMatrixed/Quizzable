@@ -94,7 +94,9 @@ class ActiveQuizDialog(object):
     
     def answerButtonClick(self, answer: int) -> None:
         """This method is a simple method to be run in a lambda statement whenever an answer button is clicked."""
-        self.theirAnswer = answer
+        if(self.currentState == 0):
+            self.theirAnswer = answer
+            self.currentState = 1
     
     def quizThread(self):
         """This subroutine is run in a separate thread, and it will manage the quiz window while the user is doing the quiz."""
@@ -103,10 +105,16 @@ class ActiveQuizDialog(object):
         questionNumber = 0
         currentQuestion = -1
         currentQuestionStartTime = 0
+        answerTime = 0
+        self.currentState = -1 # States: -1 - Quiz hasn't started, 0 - Time to answer question, 1 - Question answered, 2 - Quiz finished.
         self.theirAnswer = -1
         correctAnswer = -1
         while self.running:
             if(currentQuestion != questionNumber):
+                if(len(self.quiz.questions) == questionNumber):
+                    # Finished quiz.
+                    self.currentState = 2
+                    
                 self.questionLabel.config(text = self.quiz.questions[questionNumber].question)
                 currentQuestionStartTime = time.clock()
                 currentQuestion = questionNumber
@@ -116,17 +124,26 @@ class ActiveQuizDialog(object):
                 self.answerButton3.config(text = answers[2]) # TODO: Disable buttons if there are less than 4 answers.
                 self.answerButton4.config(text = answers[3])
                 self.theirAnswer = -1
-            if(self.theirAnswer == -1):
-                timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock()
-                if(timeRemaining <= 0):
-                    self.timeLimitLabel.config(text = "Out of time!")
-                else:
-                    self.timeLimitLabel.config(text = str(math.ceil(timeRemaining)))
-            else:
+                self.currentState = 0
+            if(self.currentState == 1 and self.theirAnswer != -1): # The following code runs immediately after they click an answer.
                 if(correctAnswer == self.theirAnswer):
+                    answerTime = time.clock() + 1
                     self.timeLimitLabel.config(text = "Correct!") # TODO: Change text colour.
                 else:
+                    answerTime = time.clock() + 5
                     self.timeLimitLabel.config(text = "Wrong!") # TODO: Change text colour.
+                self.theirAnswer = -1
+            if(self.theirAnswer == -1):
+                if(self.currentState == 0):
+                    timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock()
+                    if(timeRemaining <= 0):
+                        self.timeLimitLabel.config(text = "Out of time!")
+                        self.currentState = 1
+                        answerTime = time.clock() + 5
+                    else:
+                        self.timeLimitLabel.config(text = str(math.ceil(timeRemaining)))
+                if(self.currentState == 1 and answerTime <= time.clock()):
+                    questionNumber += 1
             
         # Closes the window after it has stopped running
         self.window.destroy()
