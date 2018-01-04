@@ -44,9 +44,10 @@ class ActiveQuizDialog(object):
         self.window.grid_rowconfigure(5, weight = 1)
         self.window.grid_rowconfigure(6, weight = 1)
         
-        # The fonts for the quiz title and question.
+        # The fonts for the quiz title, question and buttons.
         self.quizNameFont = tkfont.Font(family = "Helvetica", size = 20)
         self.questionFont = tkfont.Font(family = "Helvetica", size = 16)
+        self.buttonFont = tkfont.Font(family = "Helvetica", size = 12)
         
         # The text labels in the top 3 rows.
         self.quizNameLabel                = tk.Label(self.window, text = quiz.name, anchor = tk.NW, font = self.quizNameFont)
@@ -58,8 +59,8 @@ class ActiveQuizDialog(object):
         #       Add an event listener on toplevel for window size changes.
         self.questionLabel  = tk.Label(self.window, anchor = tk.W, font = self.questionFont, justify = tk.LEFT, wraplength = 550,
                 text = "<Question goes here> \n<If the question is a long question, then this text box spans over multiple lines>")
-        self.usernameLabel  = tk.Label(self.window, text = self.user.username)
-        self.timeLimitLabel = tk.Label(self.window, text = "<Time limit>")
+        self.usernameLabel  = tk.Label(self.window, text = self.user.username, font = self.questionFont)
+        self.timeLimitLabel = tk.Label(self.window, text = "<Time limit>", font = self.questionFont)
         # Positioning the text labels on the top 3 rows.
         self.quizNameLabel.grid(row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizSubjectAndExamBoardLabel.grid(row = 1, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
@@ -67,15 +68,16 @@ class ActiveQuizDialog(object):
         self.usernameLabel.grid(row = 0, column = 1, rowspan = 2)
         self.timeLimitLabel.grid(row = 2, column = 1)
         # The answer buttons
-        self.answerButton1 = tk.Button(self.window, text = "<Option 1>", command = lambda: self.answerButtonClick(0))
-        self.answerButton2 = tk.Button(self.window, text = "<Option 2>", command = lambda: self.answerButtonClick(1))
-        self.answerButton3 = tk.Button(self.window, text = "<Option 3>", command = lambda: self.answerButtonClick(2))
-        self.answerButton4 = tk.Button(self.window, text = "<Option 4>", command = lambda: self.answerButtonClick(3))
+        self.answerButtons = [None, None, None, None]
+        self.answerButtons[0] = tk.Button(self.window, text = "<Option 1>", font = self.buttonFont, command = lambda: self.answerButtonClick(0))
+        self.answerButtons[1] = tk.Button(self.window, text = "<Option 2>", font = self.buttonFont, command = lambda: self.answerButtonClick(1))
+        self.answerButtons[2] = tk.Button(self.window, text = "<Option 3>", font = self.buttonFont, command = lambda: self.answerButtonClick(2))
+        self.answerButtons[3] = tk.Button(self.window, text = "<Option 4>", font = self.buttonFont, command = lambda: self.answerButtonClick(3))
         # Positioning the answer buttons.
-        self.answerButton1.grid(row = 3, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.answerButton2.grid(row = 4, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.answerButton3.grid(row = 5, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.answerButton4.grid(row = 6, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.answerButtons[0].grid(row = 3, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.answerButtons[1].grid(row = 4, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.answerButtons[2].grid(row = 5, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.answerButtons[3].grid(row = 6, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         # The option buttons
         self.hintButton = tk.Button(self.window, text = "Hint")
         self.helpButton = tk.Button(self.window, text = "Help!")
@@ -114,37 +116,46 @@ class ActiveQuizDialog(object):
                 if(len(self.quiz.questions) == questionNumber):
                     # Finished quiz.
                     self.currentState = 2
+                    self.running = False
+                    continue
                     
                 self.questionLabel.config(text = self.quiz.questions[questionNumber].question)
                 currentQuestionStartTime = time.clock()
                 currentQuestion = questionNumber
                 answers, correctAnswer = self.quiz.questions[questionNumber].getShuffledAnswers()
-                self.answerButton1.config(text = answers[0])
-                self.answerButton2.config(text = answers[1])
-                self.answerButton3.config(text = answers[2]) # TODO: Disable buttons if there are less than 4 answers.
-                self.answerButton4.config(text = answers[3])
+                for i in range(len(self.answerButtons)):
+                    self.answerButtons[i].config(text = answers[i], fg = "black", bg = "SystemButtonFace") # TODO: Disable buttons if there are less than 4 answers.
                 self.theirAnswer = -1
                 self.currentState = 0
             if(self.currentState == 1 and self.theirAnswer != -1): # The following code runs immediately after they click an answer.
                 if(correctAnswer == self.theirAnswer):
                     answerTime = time.clock() + 1
-                    self.timeLimitLabel.config(text = "Correct!") # TODO: Change text colour.
+                    self.timeLimitLabel.config(text = "Correct!", fg = "green")
                 else:
                     answerTime = time.clock() + 5
-                    self.timeLimitLabel.config(text = "Wrong!") # TODO: Change text colour.
+                    self.timeLimitLabel.config(text = "Wrong!", fg = "red")
+                for i in range(len(self.answerButtons)):
+                    if(i == correctAnswer):
+                        self.answerButtons[i].config(fg = "green")
+                    else:
+                        self.answerButtons[i].config(fg = "red")
+                    if(i == self.theirAnswer):
+                        self.answerButtons[i].config(bg = "white")
                 self.theirAnswer = -1
             if(self.theirAnswer == -1):
                 if(self.currentState == 0):
                     timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock()
                     if(timeRemaining <= 0):
-                        self.timeLimitLabel.config(text = "Out of time!")
+                        self.timeLimitLabel.config(text = "Out of time!", fg = "red")
                         self.currentState = 1
                         answerTime = time.clock() + 5
                     else:
-                        self.timeLimitLabel.config(text = str(math.ceil(timeRemaining)))
-                if(self.currentState == 1 and answerTime <= time.clock()):
+                        self.timeLimitLabel.config(text = str(math.ceil(timeRemaining)), fg = "black")
+                elif(self.currentState == 1 and answerTime <= time.clock()):
                     questionNumber += 1
-            
+        
+        # TODO: Display quiz finished screen
+        
         # Closes the window after it has stopped running
         self.window.destroy()
     
