@@ -65,6 +65,7 @@ class MainApp(object):
     def userSettings(self):
         """This launches the user settings window, if there is a user logged in."""
         if(self.currentUser):
+            import userGui
             userGui.UserSettingsDialog(self.tk, self)
         else:
             tkmb.showerror("User error", "No user currently selected, can't change user settings.")

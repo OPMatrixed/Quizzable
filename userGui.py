@@ -175,7 +175,7 @@ class UserSettingsDialog(object):
         # The header text font
         self.headerFont = tkfont.Font(family = "Helvetica", size = 28)
         # The header itself.
-        self.headerLabel = tk.Label(self.window, text = "User Settings", font=self.headerFont)
+        self.headerLabel = tk.Label(self.window, text = "User Settings", font = self.headerFont)
         # The Labels/Text widgets to the left of the entry boxes/buttons with the name of the input expected on the right.
         self.usernameLabel = tk.Label(self.window, text = "Username: " + self.parent.currentUser.username)
         self.defaultExamBoardLabel = tk.Label(self.window, text = "Default exam board:")
@@ -186,20 +186,27 @@ class UserSettingsDialog(object):
         self.defaultExamBoardLabel.grid(row = 2, column = 0)
         self.timerSettingsLabel.grid(row = 3, column = 0)
         
-        examboardList = ["No preference"]
         # This queries the database to get the names of the examboards
-        examboardQueryResults = self.parent.database.execute("SELECT `EName` FROM `Examboards`;")
+        examboardQueryResults = self.parent.database.execute("SELECT * FROM `Examboards`;")
+        if(self.parent.currentUser.defaultExamBoard == -1):
+            examboardList = ["No preference"]
+        else:
+            if(examboardQueryResults):
+                for i in examboardQueryResults:
+                    if(i[0] == self.parent.currentUser.defaultExamBoard):
+                        examboardList = [i[1], "No preference"]
         if(examboardQueryResults):
             for i in examboardQueryResults:
-                examboardList.append(i[0])
+                if(i[0] != self.parent.currentUser.defaultExamBoard):
+                    examboardList.append(i[1])
         
         # The actual entry fields for the user settings.
         # Examboard entry is a combobox. It gets the options from the examboards tabel in the database.
         self.defaultExamBoardEntry = ttk.Combobox(self.window, values = examboardList)
         # The three timer button options represent three different timer settings. These are the only three, so I used buttons rather than drop down.
-        self.timerButton1 = tk.Button(self.window, text = "No timer (easy)")
-        self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)")
-        self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)")
+        self.timerButton1 = tk.Button(self.window, text = "No timer (easy)", command = lambda: self.changeTimeSetting(0))
+        self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)", command = lambda: self.changeTimeSetting(1))
+        self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)", command = lambda: self.changeTimeSetting(2))
         # Each of the buttons needs its own column, so the examboard entry is spread over three columns, using columnspan = 3.
         self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky = tk.W+tk.E)
         # The three buttons are all on the same row.
@@ -210,11 +217,31 @@ class UserSettingsDialog(object):
         # This button will run the self.finish() method, and will save the user settings in the database.
         self.completeButton = tk.Button(self.window, text = "Update user settings", command = self.finish)
         self.completeButton.grid(row = 4, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.changeTimeSetting(self.parent.currentUser.timeConfig)
+    
+    def changeTimeSetting(self, setting):
+        self.timeSetting = setting
+        if(setting == 0):
+            self.timerSettingsLabel.config(text = "Timer setting: No timer")
+        elif(setting == 1):
+            self.timerSettingsLabel.config(text = "Timer setting: Long timer")
+        else:
+            self.timerSettingsLabel.config(text = "Timer setting: Short timer")
     
     def finish(self) -> None:
         """
         This is called when the user clicks the "Update user settings" button in the bottom right of the dialog.
-        This will update the user's settings that are currently in RAM and update the user record on the database.
+        This will update the user's settings that are currently in memory and update the user record on the database.
         This destroys the window after all the previous tasks are finished.
         """
+        
+        defaultExamBoard = self.defaultExamBoardEntry.get()
+        defaultExamBoardID = -1
+        # The following gets the default exam board setting.
+        if(defaultExamBoard != "" and defaultExamBoard != "No preference"):
+            query = self.parent.database.execute("SELECT `ExamboardID` FROM `Examboards` WHERE `EName`=?;", defaultExamBoard)
+            defaultExamBoardID = query[0][0]
+        
+        self.parent.currentUser.savePreferences(timeConfig = self.timeSetting, defaultExamBoard = defaultExamBoardID)
+        
         self.window.destroy()

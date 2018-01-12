@@ -24,12 +24,12 @@ class User(object):
         lastRecord = self.dbm.execute("SELECT @@IDENTITY;")
         self.id = lastRecord[0][0]
         
-    def savePreferences(self, timeConfig: int = -1, defaultExamBoard: int = -1):
+    def savePreferences(self, timeConfig: int = -1, defaultExamBoard: int = -2):
         """
         This allows the application to change the user's settings and update the database if they have changed.
         Arguments:
         timeConfig: Integer between -1 and 2 inclusive (-1 is the rogue value to indicate no change).
-        defaultExamBoard: Integer (-1 is the rogue value to indicate no change).
+        defaultExamBoard: Integer (-2 is the rogue value to indicate no change, -1 is the rogue value that indicates "No preference").
         Returns:
         True if saved successfully.
         False if failed, an error will be printed to std.err (visible in the console log)
@@ -38,9 +38,9 @@ class User(object):
             return True
         if(timeConfig != -1):
             self.timeConfig = timeConfig
-        if(defaultExamBoard != -1):
+        if(defaultExamBoard != -2):
             self.defaultExamBoard = defaultExamBoard
-        # TODO: Update database entry
+        self.dbm.execute("UPDATE `Users` SET `TimeConfig`=?,`DefaultBoardID`=? WHERE `UserID`=?;", self.timeConfig, (self.defaultExamBoard if self.defaultExamBoard != -1 else None), self.id)
     
     def delete(self):
         """
