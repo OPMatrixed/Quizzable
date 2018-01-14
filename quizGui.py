@@ -102,63 +102,120 @@ class ActiveQuizDialog(object):
     
     def quizThread(self):
         """This subroutine is run in a separate thread, and it will manage the quiz window while the user is doing the quiz."""
-        import time
-        import math
-        questionNumber = 0
-        currentQuestion = -1
-        currentQuestionStartTime = 0
-        answerTime = 0
-        self.currentState = -1 # States: -1 - Quiz hasn't started, 0 - Time to answer question, 1 - Question answered, 2 - Quiz finished.
-        self.theirAnswer = -1
-        correctAnswer = -1
+        import time # Used to keep track of times
+        import math # Used for the rounding functions, as time can be shown to too many unnecessary decimal places.
+        questionNumber = 0 # The question number of the quiz that should be displayed on the next iteration.
+        currentQuestion = -1 # The current question number that is currently being displayed.
+        currentQuestionStartTime = 0 # The time that the current question was initially displayed, stored as the time since the thread started, in seconds.
+        answerTime = 0 # The time that the quiz window will move on from the current question after the user has answered, stored as the time since the thread started, in seconds.
+        self.currentState = -1 # The current state of the quiz. States: -1 - Quiz hasn't started, 0 - Time to answer question, 1 - Question answered, 2 - Quiz finished.
+        self.theirAnswer = -1 # The answer that the user gives, which is set every time a user clicks on an answer button.
+        correctAnswer = -1 # The correct answer to the current question.
+        self.numberOfCorrectAnswers = 0 # The number of answers that have been answered correctly.
+        self.totalPausedDuration = 0 # The length of time that the quiz has been paused for.
         while self.running:
             if(currentQuestion != questionNumber):
+                # A new question needs to be displayed
                 if(len(self.quiz.questions) == questionNumber):
-                    # Finished quiz.
+                    # This code is run when the user has finished the quiz.
                     self.currentState = 2
                     self.running = False
                     continue
-                    
+                # The next question's text is displayed
                 self.questionLabel.config(text = self.quiz.questions[questionNumber].question)
                 currentQuestionStartTime = time.clock()
                 currentQuestion = questionNumber
+                # Gets the shuffled answers to the current question.
                 answers, correctAnswer = self.quiz.questions[questionNumber].getShuffledAnswers()
-                for i in range(len(self.answerButtons)):
-                    self.answerButtons[i].config(text = answers[i], fg = "black", bg = "SystemButtonFace") # TODO: Disable buttons if there are less than 4 answers.
+                for i in range(len(answers)):
+                    # This recolours and re-enables buttons, as after each question the font colour of each button changes, and some buttons may be disabled.
+                    self.answerButtons[i].config(text = answers[i], fg = "black", bg = "SystemButtonFace")
+                    self.answerButtons[i].config(state = tk.NORMAL)
+                for i in range(4, len(answers), -1):
+                    # This disables buttons if there is less than four answers for a given question.
+                    self.answerButtons[i].config(state = tk.DISABLED, text = "")
+                # Resetting their answer and the state variables.
                 self.theirAnswer = -1
                 self.currentState = 0
-            if(self.currentState == 1 and self.theirAnswer != -1): # The following code runs immediately after they click an answer.
+            if(self.currentState == 1 and self.theirAnswer != -1):
+                # The following code runs immediately after they click an answer.
                 if(correctAnswer == self.theirAnswer):
+                    # If the answer they entered is correct:
+                    # Show the next question after 1 second of delay
                     answerTime = time.clock() + 1
+                    # Display 'Correct', in green, where the countdown timer was.
                     self.timeLimitLabel.config(text = "Correct!", fg = "green")
+                    self.numberOfCorrectAnswers += 1
                 else:
+                    # If the answered they entered is wrong:
+                    # Show the next question after 5 seconds of delay.
                     answerTime = time.clock() + 5
+                    # Display 'Wrong', in red, where the countdown timer was.
                     self.timeLimitLabel.config(text = "Wrong!", fg = "red")
                 for i in range(len(self.answerButtons)):
+                    # For each of the answer buttons:
                     if(i == correctAnswer):
+                        # Make the text green if it was the correct button
                         self.answerButtons[i].config(fg = "green")
                     else:
+                        # Make the text red if it was the wrong button
                         self.answerButtons[i].config(fg = "red")
                     if(i == self.theirAnswer):
+                        # If it was the button that they clicked, make the background of that button white.
                         self.answerButtons[i].config(bg = "white")
                 self.theirAnswer = -1
             if(self.theirAnswer == -1):
                 if(self.currentState == 0):
+                    # If they have not entered an answer, and the window is in the state where it is awaiting an answer:
+                    # Calculate the time remaining.
                     timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock()
                     if(timeRemaining <= 0):
+                        # If the user has ran out of time:
+                        # Display 'Out of time!', in red, where the countdown timer was.
                         self.timeLimitLabel.config(text = "Out of time!", fg = "red")
                         self.currentState = 1
+                        # Display the next question after 5 seconds of delay.
                         answerTime = time.clock() + 5
                     else:
+                        # If the user still has time left, display the remaining time in seconds, rounded up to the nearest integer.
                         self.timeLimitLabel.config(text = str(math.ceil(timeRemaining)), fg = "black")
                 elif(self.currentState == 1 and answerTime <= time.clock()):
+                    # If the delay after answering a question is over, show the next question.
                     questionNumber += 1
         
-        # TODO: Display quiz finished screen
+        # If the user has finished the quiz and hasn't terminated the quiz elsewhere:
+        if(self.currentState == 2):
+            # Remove the buttons
+            self.unloadQuestionView()
+            # Display the user's performance statistics.
+            self.loadFinishedView()
+            self.running = True
+            # Keep the window alive before closing it, so the user has time to read the results.
+            while(self.running):
+                pass
         
-        # Closes the window after it has stopped running
+        # Destroy the window after everything has finished.
         self.window.destroy()
+        
+    
+    def unloadQuestionView(self) -> None:
+        """This method removes all the buttons of the quiz, ready to display the end screen statistics."""
+        self.timeLimitLabel.destroy()
+        for i in self.answerButtons:
+            i.destroy()
+        self.hintButton.destroy()
+        self.helpButton.destroy()
+        self.pauseButton.destroy()
+        self.endQuizButton.destroy()
+    
+    def loadFinishedView(self) -> None:
+        """This method displays the end of quiz statistics, after the user has finished the quiz."""
+        self.questionLabel.config(text = "Quiz Completed!")
+        self.scoreLabel = tk.Label(self.window, text = "Score: " + str(self.numberOfCorrectAnswers) + "/" + str(len(self.quiz.questions)), font = self.questionFont)
+        self.timeLabel = tk.Label(self.window, text = "Time taken: " + " seconds", font = self.questionFont) # TODO: Get time
+        self.scoreLabel.grid(row = 3, column = 0)
+        self.timeLabel.grid(row = 4, column = 0)
     
     def finish(self) -> None:
-        # This destroys the window after all the previous tasks are finished, by setting running to false, so the window closes once the thread has finished its last iteration.
+        """This destroys the window after all the previous tasks are finished, by setting running to false, so the window closes once the thread has finished its last iteration."""
         self.running = False
