@@ -188,6 +188,7 @@ class UserSettingsDialog(object):
         
         # This queries the database to get the names of the examboards
         examboardQueryResults = self.parent.database.execute("SELECT * FROM `Examboards`;")
+        examboardList = []
         if(self.parent.currentUser.defaultExamBoard == -1):
             examboardList = ["No preference"]
         else:
@@ -238,10 +239,13 @@ class UserSettingsDialog(object):
         defaultExamBoard = self.defaultExamBoardEntry.get()
         defaultExamBoardID = -1
         # The following gets the default exam board setting.
-        if(defaultExamBoard != "" and defaultExamBoard != "No preference"):
+        if(defaultExamBoard == ""):
+            self.parent.currentUser.savePreferences(timeConfig = self.timeSetting)
+            self.window.destroy()
+            return
+        if(defaultExamBoard != "No preference"):
             query = self.parent.database.execute("SELECT `ExamboardID` FROM `Examboards` WHERE `EName`=?;", defaultExamBoard)
             defaultExamBoardID = query[0][0]
-        
         self.parent.currentUser.savePreferences(timeConfig = self.timeSetting, defaultExamBoard = defaultExamBoardID)
         
         self.window.destroy()

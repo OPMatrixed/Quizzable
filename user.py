@@ -9,7 +9,10 @@ class User(object):
         self.id = id
         self.username = username
         self.timeConfig = timeConfig
-        self.defaultExamBoard = defaultExamBoard
+        if(defaultExamBoard == None):
+            self.defaultExamBoard = -1
+        else:
+            self.defaultExamBoard = defaultExamBoard
         if(id == -1):
             self.addToDatabase()
     
