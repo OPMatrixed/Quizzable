@@ -48,7 +48,7 @@ class Question(object):
         answers.insert(index, self.correctAnswer)
         return answers, index
     
-    def getQuestionFromDatabaseRecord(record: tuple): # This is not called on an object, but the class itself.
+    def getQuestionFromDatabaseRecord(record: tuple) -> 'Question': # This is not called on an object, but the class itself.
         """This will take a record from the database as a tuple and return a Question object from the data it is given."""
         # The following lines get each of the required data fields to make a Question object.
         questionID = record[0]

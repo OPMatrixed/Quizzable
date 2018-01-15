@@ -25,7 +25,7 @@ class ActiveQuizDialog(object):
         self.window = tk.Toplevel(toplevel, padx = 5, pady = 5)
         # Dimensions of the window: 500 pixels wide by 300 pixels high.
         self.window.geometry("800x500")
-        # The minimum dimensions of the window, as this window is resizable.
+        # The minimum dimensions of the window, as this window is re-sizable.
         self.window.minsize(width = 500, height = 400)
         # Setting the title of the window.
         self.window.title(quiz.name + " - Quiz - Quizzable")
@@ -113,6 +113,8 @@ class ActiveQuizDialog(object):
         correctAnswer = -1 # The correct answer to the current question.
         self.numberOfCorrectAnswers = 0 # The number of answers that have been answered correctly.
         self.totalPausedDuration = 0 # The length of time that the quiz has been paused for.
+        self.timesTakenToAnswer = [None for i in range(len(self.quiz.questions))]
+        self.totalDuration = None
         while self.running:
             if(currentQuestion != questionNumber):
                 # A new question needs to be displayed
@@ -139,6 +141,8 @@ class ActiveQuizDialog(object):
                 self.currentState = 0
             if(self.currentState == 1 and self.theirAnswer != -1):
                 # The following code runs immediately after they click an answer.
+                # Record the time taken to answer the question
+                self.timesTakenToAnswer[currentQuestion] = time.clock() - currentQuestionStartTime
                 if(correctAnswer == self.theirAnswer):
                     # If the answer they entered is correct:
                     # Show the next question after 1 second of delay
@@ -173,6 +177,14 @@ class ActiveQuizDialog(object):
                         # If the user has ran out of time:
                         # Display 'Out of time!', in red, where the countdown timer was.
                         self.timeLimitLabel.config(text = "Out of time!", fg = "red")
+                        for i in range(len(self.answerButtons)):
+                            # For each of the answer buttons:
+                            if(i == correctAnswer):
+                                # Make the text green if it was the correct button
+                                self.answerButtons[i].config(fg = "green")
+                            else:
+                                # Make the text red if it was the wrong button
+                                self.answerButtons[i].config(fg = "red")
                         self.currentState = 1
                         # Display the next question after 5 seconds of delay.
                         answerTime = time.clock() + 5
@@ -182,17 +194,26 @@ class ActiveQuizDialog(object):
                 elif(self.currentState == 1 and answerTime <= time.clock()):
                     # If the delay after answering a question is over, show the next question.
                     questionNumber += 1
-        
+            # Wait 0.1 seconds before running through the loop again, to reduce load on CPU.
+            time.sleep(0.1)
         # If the user has finished the quiz and hasn't terminated the quiz elsewhere:
         if(self.currentState == 2):
             # Remove the buttons
             self.unloadQuestionView()
+            # Calculate the average time to answer a question.
+            averageAnswerTime = sum(self.timesTakenToAnswer) / len(self.timesTakenToAnswer)
+            self.totalDuration = time.clock() - self.totalPausedDuration
             # Display the user's performance statistics.
             self.loadFinishedView()
             self.running = True
+            import datetime
+            # Adds the result to the database.
+            self.parent.database.execute("INSERT INTO `Results` (UserID, QuizID, Score, DateCompleted, AverageAnswerTime, TotalDuration) VALUES (?, ?, ?, ?, ?, ?);",
+                    self.user.id, self.quiz.id, self.numberOfCorrectAnswers / len(self.quiz.questions), datetime.datetime.now(), averageAnswerTime, self.totalDuration)
+            
             # Keep the window alive before closing it, so the user has time to read the results.
             while(self.running):
-                pass
+                time.sleep(0.1)
         
         # Destroy the window after everything has finished.
         self.window.destroy()
@@ -210,9 +231,10 @@ class ActiveQuizDialog(object):
     
     def loadFinishedView(self) -> None:
         """This method displays the end of quiz statistics, after the user has finished the quiz."""
+        import math
         self.questionLabel.config(text = "Quiz Completed!")
         self.scoreLabel = tk.Label(self.window, text = "Score: " + str(self.numberOfCorrectAnswers) + "/" + str(len(self.quiz.questions)), font = self.questionFont)
-        self.timeLabel = tk.Label(self.window, text = "Time taken: " + " seconds", font = self.questionFont) # TODO: Get time
+        self.timeLabel = tk.Label(self.window, text = "Time taken: " + str(math.ceil(self.totalDuration * 10) / 10) + " seconds", font = self.questionFont)
         self.scoreLabel.grid(row = 3, column = 0)
         self.timeLabel.grid(row = 4, column = 0)
     

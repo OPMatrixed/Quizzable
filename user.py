@@ -16,26 +16,23 @@ class User(object):
         if(id == -1):
             self.addToDatabase()
     
-    def addToDatabase(self):
+    def addToDatabase(self) -> None:
         """This adds this user to the database."""
         # This adds the user record.
         if(self.defaultExamBoard == -1):
-            self.dbm.execute("INSERT INTO users (Username, TimeConfig) VALUES (?,?);", self.username, self.timeConfig)
+            self.dbm.execute("INSERT INTO `Users` (Username, TimeConfig) VALUES (?,?);", self.username, self.timeConfig)
         else:
-            self.dbm.execute("INSERT INTO users (Username, TimeConfig, DefaultBoardID) VALUES (?,?,?);", self.username, self.timeConfig, self.defaultExamBoard)
+            self.dbm.execute("INSERT INTO `Users` (Username, TimeConfig, DefaultBoardID) VALUES (?,?,?);", self.username, self.timeConfig, self.defaultExamBoard)
         # This gets the inserted record's UserID.
         lastRecord = self.dbm.execute("SELECT @@IDENTITY;")
         self.id = lastRecord[0][0]
-        
-    def savePreferences(self, timeConfig: int = -1, defaultExamBoard: int = -2):
+    
+    def savePreferences(self, timeConfig: int = -1, defaultExamBoard: int = -2) -> None:
         """
         This allows the application to change the user's settings and update the database if they have changed.
         Arguments:
         timeConfig: Integer between -1 and 2 inclusive (-1 is the rogue value to indicate no change).
         defaultExamBoard: Integer (-2 is the rogue value to indicate no change, -1 is the rogue value that indicates "No preference").
-        Returns:
-        True if saved successfully.
-        False if failed, an error will be printed to std.err (visible in the console log)
         """
         if(timeConfig == self.timeConfig and defaultExamBoard == self.defaultExamBoard):
             return True
@@ -45,7 +42,7 @@ class User(object):
             self.defaultExamBoard = defaultExamBoard
         self.dbm.execute("UPDATE `Users` SET `TimeConfig`=?,`DefaultBoardID`=? WHERE `UserID`=?;", self.timeConfig, (self.defaultExamBoard if self.defaultExamBoard != -1 else None), self.id)
     
-    def delete(self):
+    def delete(self) -> None:
         """
         Removes the user from the database.
         Returns:
@@ -53,10 +50,12 @@ class User(object):
         False if failed to delete.
         """
         pass # TODO: Add code to delete from database.
-    
+
+""" sort of deprecated -- code only needs to be called once, currently in mainmenu.py       
     def loadUsers(): # This doesn't get called on a User object, but the User class (a static method).
-        """
+        ""."
         Takes no arguments
         Returns a list of users from the database.
-        """
+        ""."
         pass # TODO: Add code
+"""

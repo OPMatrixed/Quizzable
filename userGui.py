@@ -202,13 +202,13 @@ class UserSettingsDialog(object):
                     examboardList.append(i[1])
         
         # The actual entry fields for the user settings.
-        # Examboard entry is a combobox. It gets the options from the examboards tabel in the database.
+        # Exam board entry is a combobox. It gets the options from the exam boards table in the database.
         self.defaultExamBoardEntry = ttk.Combobox(self.window, values = examboardList)
         # The three timer button options represent three different timer settings. These are the only three, so I used buttons rather than drop down.
         self.timerButton1 = tk.Button(self.window, text = "No timer (easy)", command = lambda: self.changeTimeSetting(0))
         self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)", command = lambda: self.changeTimeSetting(1))
         self.timerButton3 = tk.Button(self.window, text = "Short timer (hard)", command = lambda: self.changeTimeSetting(2))
-        # Each of the buttons needs its own column, so the examboard entry is spread over three columns, using columnspan = 3.
+        # Each of the buttons needs its own column, so the exam board entry is spread over three columns, using columnspan = 3.
         self.defaultExamBoardEntry.grid(row = 2, column = 1, columnspan = 3, sticky = tk.W+tk.E)
         # The three buttons are all on the same row.
         self.timerButton1.grid(row = 3, column = 1, sticky = tk.W+tk.E)

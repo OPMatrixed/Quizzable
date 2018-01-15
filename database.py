@@ -6,12 +6,12 @@ import pyodbc
 
 class DatabaseManager(object):
     def __init__(self, filename: str) -> None:
-        # This works out the filepath of the directory that this file is stored in, then it adds the filename of the database to the end.
+        # This works out the file path of the directory that this file is stored in, then it adds the filename of the database to the end.
         self.filepath = os.path.join(os.path.dirname(__file__), filename)
         # Logs the database location which was generated above.
         print("Database Path", self.filepath)
         # Connects to the database, using the pyodbc module and its Microsoft Access Driver.
-        self.dbcon = pyodbc.connect("Driver={Microsoft Access Driver (*.mdb, *.accdb)}; Dbq="+self.filepath+";")
+        self.dbcon = pyodbc.connect("Driver={Microsoft Access Driver (*.mdb, *.accdb)}; Dbq=" + self.filepath + ";")
         # The cursor allows you to execute SQL commands on the database.
         self.dbCursor = self.dbcon.cursor()
     

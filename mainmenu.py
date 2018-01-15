@@ -49,7 +49,7 @@ class MainApp(object):
         self.loadLoginScreen()
         
         self.examboardDictionary = {}
-        # This queries the database to get the names of the examboards.
+        # This queries the database to get the names of the exam boards.
         examboardQueryResults = self.database.execute("SELECT * FROM `Examboards`;")
         if(examboardQueryResults):
             for i in examboardQueryResults:
@@ -61,8 +61,10 @@ class MainApp(object):
         if(subjectQueryResults):
             for i in subjectQueryResults:
                 self.subjectDictionary[i[0]] = i[1]
+        # The quiz the user has currently selected, starts off as None.
+        self.currentlySelectedQuiz = None
     
-    def userSettings(self):
+    def userSettings(self) -> None:
         """This launches the user settings window, if there is a user logged in."""
         if(self.currentUser):
             import userGui
@@ -70,7 +72,7 @@ class MainApp(object):
         else:
             tkmb.showerror("User error", "No user currently selected, can't change user settings.")
     
-    def createTitleBarMenu(self) -> None: # TODO: Only show if there is a user selected.
+    def createTitleBarMenu(self) -> None:
         """
         This will add the menu bar to the top of the window.
         Returns nothing.
@@ -88,7 +90,7 @@ class MainApp(object):
         self.userMenu = tk.Menu(self.menuBar, tearoff = 0)
         # userGui.UserCreateDialog() makes a Create User window, and it is passed as a lambda statement as arguments have to be passed.
         self.userMenu.add_command(label = "Create New User", command = lambda: userGui.UserCreateDialog(self.tk, self))
-        self.userMenu.add_command(label = "User Settings",   command = self.userSettings)
+        self.userMenu.add_command(label = "User Settings", command = self.userSettings)
         self.userMenu.add_command(label = "Change User") # TODO
         
         # This is the subjects & exam boards drop-down.
@@ -102,8 +104,8 @@ class MainApp(object):
         self.quizMenu.add_command(label = "Import a Quiz", command = self.importQuizButtonCommand)
         
         # Adding the above sub-menus to the main menu bar.
-        self.menuBar.add_cascade(label = "Quiz Management",        menu = self.quizMenu)
-        self.menuBar.add_cascade(label = "User",                   menu = self.userMenu)
+        self.menuBar.add_cascade(label = "Quiz Management", menu = self.quizMenu)
+        self.menuBar.add_cascade(label = "User", menu = self.userMenu)
         self.menuBar.add_cascade(label = "Subjects & Exam Boards", menu = self.subjectsAndExamBoardsMenu)
         
         self.menuBar.add_command(label = "Statistics", command = lambda: statsGui.StatisticsDialog(self.tk, self))
@@ -189,7 +191,7 @@ class MainApp(object):
         """
         # Gets the text from the Combobox.
         username = self.loginComboUser.get()
-        if(not username): # Presense check 
+        if(not username): # Presence check 
             return
         if(username == "No users created, click \"Create User\""): # Rogue value check
             return
@@ -228,7 +230,7 @@ class MainApp(object):
         self.quizBrowserSearchFrame.grid_columnconfigure(0, weight = 1)
         self.quizBrowserSearchFrame.grid_columnconfigure(1, weight = 4)
         self.quizBrowserSearchFrame.grid_rowconfigure(0, weight = 1)
-        # The search text preceeding the text entry box.
+        # The search text preceding the text entry box.
         self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text="Search:")
         self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
         # The actual search bar. This will be tied to an event later which updates the search after each letter is typed.
@@ -243,15 +245,15 @@ class MainApp(object):
         self.importQuizButton.grid(row = 0, column = 3)
         # The quiz filters, as comboboxes. They default to having the text "Filter by ...", but after selecting another value they can't go back to "Filter by ..."
         # To remove the filter after selecting a value for the filter, the user must select the combobox and select "No filter".
-        self.filterByExamBoardCombo  = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"])
-        self.filterBySubjectCombo    = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"])
+        self.filterByExamBoardCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"])
+        self.filterBySubjectCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"])
         self.filterByDifficultyCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter","1","2","3","4","5","2 and above","3 and above","4 and above","2 and below","3 and below","4 and below"])
-        self.filterByExamBoardCombo.set ("Filter by exam board")
-        self.filterBySubjectCombo.set   ("Filter by subject")
+        self.filterByExamBoardCombo.set("Filter by exam board")
+        self.filterBySubjectCombo.set("Filter by subject")
         self.filterByDifficultyCombo.set("Filter by difficulty")
         # Positioning of the filter comboboxes. All fit on the same row.
-        self.filterByExamBoardCombo.grid (row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S) # Sticky just makes the element strech in certain directions.
-        self.filterBySubjectCombo.grid   (row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S) # tk.N+tk.S means up and down (North and South), tk.W+tk.E means West and East
+        self.filterByExamBoardCombo.grid(row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S) # Sticky just makes the element stretch in certain directions.
+        self.filterBySubjectCombo.grid(row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S) # tk.N+tk.S means up and down (North and South), tk.W+tk.E means West and East
         self.filterByDifficultyCombo.grid(row = 1, column = 2, sticky=tk.W+tk.E+tk.N+tk.S) # Adding the directions up makes it expand in all the directions you specify.
         # Start of frame box that contains the lists.
         self.quizListFrame = tk.Frame(self.tk)
@@ -262,32 +264,41 @@ class MainApp(object):
         self.quizListFrame.grid_columnconfigure(3, weight = 1)
         self.quizListFrame.grid_rowconfigure(1, weight = 1)
         # The column headings for the synchronised lists.
-        self.quizListLabelNames       = tk.Label(self.quizListFrame, text = "Quiz Name")
-        self.quizListLabelSubject     = tk.Label(self.quizListFrame, text = "Subject")
-        self.quizListLabelExamBoard   = tk.Label(self.quizListFrame, text = "Examboard")
+        self.quizListLabelNames = tk.Label(self.quizListFrame, text = "Quiz Name")
+        self.quizListLabelSubject = tk.Label(self.quizListFrame, text = "Subject")
+        self.quizListLabelExamBoard = tk.Label(self.quizListFrame, text = "Examboard")
         self.quizListLabelBestAttempt = tk.Label(self.quizListFrame, text = "Last Attempt")
         # The positions of the column headings, all on the same row.
-        self.quizListLabelNames.grid      (row = 0, column = 0)
-        self.quizListLabelSubject.grid    (row = 0, column = 1)
-        self.quizListLabelExamBoard.grid  (row = 0, column = 2)
+        self.quizListLabelNames.grid(row = 0, column = 0)
+        self.quizListLabelSubject.grid(row = 0, column = 1)
+        self.quizListLabelExamBoard.grid(row = 0, column = 2)
         self.quizListLabelBestAttempt.grid(row = 0, column = 3)
         # The scroll bar for the lists.
         self.quizListBoxScrollBar = tk.Scrollbar(self.quizListFrame, command = self.scrollbarCommand)
         self.quizListBoxScrollBar.grid(row = 1, column = 4, sticky=tk.N+tk.S)
         # The main Quizzes List is split up into four synchronised lists, due to the nature of the listbox in tkinter.
         # The Quiz Name goes in the first (biggest) column.
-        self.quizListBoxNames       = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
+        self.quizListBoxNames = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
         # The Subject goes in the second column.
-        self.quizListBoxSubject     = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
-        # The Exam Board goes in the thrird column.
-        self.quizListBoxExamBoard   = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
+        self.quizListBoxSubject = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
+        # The Exam Board goes in the third column.
+        self.quizListBoxExamBoard = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
         # The Best Attempt for each quiz goes in the fourth column.
         self.quizListBoxBestAttempt = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
         # The positioning of the synchronized lists, all on the second row, and all taking as much space as possible in their grid cell using sticky = ...
-        self.quizListBoxNames.grid      (row = 1, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.quizListBoxSubject.grid    (row = 1, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.quizListBoxExamBoard.grid  (row = 1, column = 2, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.quizListBoxNames.grid(row = 1, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.quizListBoxSubject.grid(row = 1, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.quizListBoxExamBoard.grid(row = 1, column = 2, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizListBoxBestAttempt.grid(row = 1, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
+        # Bind selecting an entry on the list to the self.selectQuiz() method
+        self.quizListBoxNames.bind("<Button-1>", self.selectQuiz)
+        self.quizListBoxSubject.bind("<Button-1>", self.selectQuiz)
+        self.quizListBoxExamBoard.bind("<Button-1>", self.selectQuiz)
+        self.quizListBoxBestAttempt.bind("<Button-1>", self.selectQuiz)
+        self.quizListBoxNames.bind("<Key>", self.selectQuiz)
+        self.quizListBoxSubject.bind("<Key>", self.selectQuiz)
+        self.quizListBoxExamBoard.bind("<Key>", self.selectQuiz)
+        self.quizListBoxBestAttempt.bind("<Key>", self.selectQuiz)
         
         # This loads all the quiz records from the database, but ignores each quiz's questions.
         quizQueryResult = self.database.execute("SELECT * FROM `Quizzes`;")
@@ -295,6 +306,7 @@ class MainApp(object):
         self.quizNames = []
         self.quizSubjects = []
         self.quizExamboards = []
+        self.quizQuestionNumbers = []
         self.quizDifficulties = []
         self.quizTags = {}
         # This goes through each quiz in the database and adds it to these lists which will be used in searching/filtering.
@@ -303,6 +315,7 @@ class MainApp(object):
             self.quizNames.append(i[1])
             self.quizSubjects.append(i[2])
             self.quizExamboards.append(i[3])
+            self.quizQuestionNumbers.append(i[4])
             self.quizDifficulties.append(i[6])
             self.quizTags[i[0]] = i[5].split(",") if i[5] else []
             # This is adds each quiz to each of the lists.
@@ -323,18 +336,17 @@ class MainApp(object):
         self.quizListSidePanel = tk.Frame(self.tk)
         self.quizListSidePanel.grid_columnconfigure(0, weight = 1)
         # Text fields, these will be updated whenever a new quiz is selected on the list.
-        self.quizListSideName = tk.Label(self.quizListSidePanel, text = "<Quiz Name>")
-        self.quizListSideSubject = tk.Label(self.quizListSidePanel, text = "<Quiz Subject>")
-        self.quizListSideExamboard = tk.Label(self.quizListSidePanel, text = "<Quiz Examboard>")
-        self.quizListSideTotalQuestions = tk.Label(self.quizListSidePanel, text = "<Total number of questions>")
-        self.quizListSideBestAttempt = tk.Label(self.quizListSidePanel, text = "<Quiz Best Attempt>")
+        self.quizListSideName = tk.Label(self.quizListSidePanel, text = "")
+        self.quizListSideSubject = tk.Label(self.quizListSidePanel, text = "")
+        self.quizListSideExamboard = tk.Label(self.quizListSidePanel, text = "")
+        self.quizListSideTotalQuestions = tk.Label(self.quizListSidePanel, text = "")
+        self.quizListSideBestAttempt = tk.Label(self.quizListSidePanel, text = "")
         # Positioning of the text fields.
         self.quizListSideName.grid(row = 0, column = 0)
         self.quizListSideSubject.grid(row = 1, column = 0)
         self.quizListSideExamboard.grid(row = 2, column = 0)
-        self.quizListSideTotalQuestions.grid(row = 3, column = 0)
+        self.quizListSideTotalQuestions.grid(row = 3, column = 0) # TODO: Add difficulty
         self.quizListSideBestAttempt.grid(row = 4, column = 0)
-        
         # End of Frame
         self.quizListSidePanel.grid(row = 2, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
         
@@ -347,21 +359,53 @@ class MainApp(object):
         self.quizListSideButtonFrame.grid_rowconfigure(2, weight = 1)
         self.quizListSideButtonFrame.grid_rowconfigure(3, weight = 1)
         # The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
-        self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz)
-        self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8)
-        self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8)
-        self.quizListSideDelteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8)
+        self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz, state = tk.DISABLED)
+        self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8, state = tk.DISABLED)
+        self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8, state = tk.DISABLED)
+        self.quizListSideDeleteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8, state = tk.DISABLED)
         # The positioning for the buttons above.
         self.quizListSideLaunchQuizButton.grid(row = 0, column = 0)
         self.quizListSideEditQuizButton.grid(row = 1, column = 0)
         self.quizListSideExportQuizButton.grid(row = 2, column = 0)
-        self.quizListSideDelteQuizButton.grid(row = 3, column = 0)
+        self.quizListSideDeleteQuizButton.grid(row = 3, column = 0)
         # Placing the button frame.
         self.quizListSideButtonFrame.grid(row = 3, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
+    def selectQuiz(self, *args) -> None:
+        """This is run every time the user makes a change to the quiz currently selected in the list."""
+        # This gets the currently selected entry in the list, as variable n
+        n = -1
+        if(self.quizListBoxNames.curselection()):
+            n = self.quizListBoxNames.curselection()[0]
+        elif(self.quizListBoxSubject.curselection()):
+            n = self.quizListBoxSubject.curselection()[0]
+        elif(self.quizListBoxExamBoard.curselection()):
+            n = self.quizListBoxExamBoard.curselection()[0]
+        elif(self.quizListBoxBestAttempt.curselection()):
+            n = self.quizListBoxBestAttempt.curselection()[0]
+        self.currentlySelectedQuiz = n
+        # This changes all the text labels on the right to the details of the currently selected quiz.
+        self.quizListSideName.config(text = self.quizNames[self.currentlySelectedQuiz])
+        self.quizListSideSubject.config(text = self.subjectDictionary[self.quizSubjects[self.currentlySelectedQuiz]])
+        self.quizListSideExamboard.config(text = self.examboardDictionary[self.quizExamboards[self.currentlySelectedQuiz]])
+        numberOfQuestions = self.quizQuestionNumbers[self.currentlySelectedQuiz]
+        self.quizListSideTotalQuestions.config(text = str(numberOfQuestions) + " question" + ("s" if numberOfQuestions != 1 else "") + " in this quiz.\nDifficulty: " + str(self.quizDifficulties[self.currentlySelectedQuiz]))
+        bestAttempt = self.database.execute("SELECT * FROM `Results` WHERE `UserID`=? AND `QuizID`=? ORDER BY `Score` DESC;", self.currentUser.id, self.quizIDs[self.currentlySelectedQuiz])
+        if(bestAttempt and len(bestAttempt)):
+            self.quizListSideBestAttempt.config(text = "Best score: " + str(round(bestAttempt[0][3]*100, 1)) + "%\nTime taken: " + str(round(bestAttempt[0][6], 1)) + "s")
+        else:
+            self.quizListSideBestAttempt.config(text = "Not attempted yet.")
+        # Re-enable all the buttons on the right
+        self.quizListSideLaunchQuizButton.config(state = tk.NORMAL)
+        self.quizListSideEditQuizButton.config(state = tk.NORMAL)
+        self.quizListSideExportQuizButton.config(state = tk.NORMAL)
+        self.quizListSideDeleteQuizButton.config(state = tk.NORMAL)
+    
     def scrollbarCommand(self, *args) -> None:
-        """This method is for adjusting the list, which gets called by the scrollbar everytime the scrollbar is moved.
-        This method is called by tkinter (the gui module), so I can't control what arguments are entered."""
+        """
+        This method is for adjusting the list, which gets called by the scrollbar every time the scrollbar is moved.
+        This method is called by tkinter (the GUI module), so I can't control what arguments are entered.
+        """
         self.quizListBoxNames.yview(*args)
         self.quizListBoxSubject.yview(*args)
         self.quizListBoxExamBoard.yview(*args)
@@ -371,7 +415,7 @@ class MainApp(object):
         """
         This method is called each time the user scrolls (often with the mouse's scroll wheel) with a list in-focus,
         and adjusts the other lists and the scrollbar based on how much is scrolled.
-        This method is called by tkinter (the gui module), so I can't control what arguments are entered.
+        This method is called by tkinter (the GUI module), so I can't control what arguments are entered.
         """
         self.quizListBoxScrollBar.set(args[0], args[1])
         self.quizListBoxNames.yview("moveto", args[0])
@@ -382,24 +426,15 @@ class MainApp(object):
     def launchQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
         import quiz, quizGui
-        n = -1
         # The following if statements check each list to see if an entry from any of the lists has been selected, and sets the number n to the selected row number.
-        if(self.quizListBoxNames.curselection()):
-            n = self.quizListBoxNames.curselection()[0]
-        elif(self.quizListBoxSubject.curselection()):
-            n = self.quizListBoxSubject.curselection()[0]
-        elif(self.quizListBoxExamBoard.curselection()):
-            n = self.quizListBoxExamBoard.curselection()[0]
-        elif(self.quizListBoxBestAttempt.curselection()):
-            n = self.quizListBoxBestAttempt.curselection()[0]
-        else:
+        if(self.currentlySelectedQuiz == None):
             # An error message is shown if there are no rows selected, and this method returns so it doesn't try to load a quiz with id of negative one.
             tkmb.showerror("Launch quiz error", "No quiz selected to launch, please select a quiz by clicking on one from the list.")
             return
         
-        print("Loading: "+self.quizNames[n]) # A debugging line, to check if the correct quiz is being loaded.
+        print("Loading: " + self.quizNames[self.currentlySelectedQuiz]) # A debugging line, to check if the correct quiz is being loaded.
         # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
-        quiz = quiz.Quiz.getQuiz(self.quizIDs[n], self.database)
+        quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
         # This then launches the window, passing the loaded quiz as an argument.
         quizGui.ActiveQuizDialog(self.tk, self, quiz, self.currentUser)
     
