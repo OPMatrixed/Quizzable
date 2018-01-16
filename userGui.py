@@ -47,7 +47,7 @@ class UserCreateDialog(object):
         self.headerFont = tkfont.Font(family = "Helvetica", size = 28)
         # The header itself.
         self.headerLabel = tk.Label(self.window, text = "Create User", font = self.headerFont)
-        self.headerLabel.grid(row = 0, column = 0, columnspan=2)
+        self.headerLabel.grid(row = 0, column = 0, columnspan = 2)
         
         # The Labels/Text widgets to the left of the entry boxes/buttons with the name of the input expected on the right.
         self.usernameLabel = tk.Label(self.window, text = "Username:")

@@ -100,7 +100,7 @@ class MainApp(object):
         
         # This is the quiz drop-down, and handles creating quizzes and import quizzes.
         self.quizMenu = tk.Menu(self.menuBar, tearoff = 0)
-        self.quizMenu.add_command(label = "Create a Quiz") # TODO
+        self.quizMenu.add_command(label = "Create a Quiz", command = self.createQuizButtonCommand)
         self.quizMenu.add_command(label = "Import a Quiz", command = self.importQuizButtonCommand)
         
         # Adding the above sub-menus to the main menu bar.
@@ -239,7 +239,7 @@ class MainApp(object):
         self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky=tk.W+tk.E)
         
         # Create a Quiz and Import a Quiz Buttons
-        self.createQuizButton = tk.Button(self.tk, text = "Create a Quiz")
+        self.createQuizButton = tk.Button(self.tk, text = "Create a Quiz", command = self.createQuizButtonCommand)
         self.importQuizButton = tk.Button(self.tk, text = "Import a Quiz", command = self.importQuizButtonCommand)
         self.createQuizButton.grid(row = 0, column = 2)
         self.importQuizButton.grid(row = 0, column = 3)
@@ -438,6 +438,12 @@ class MainApp(object):
         # This then launches the window, passing the loaded quiz as an argument.
         quizGui.ActiveQuizDialog(self.tk, self, quiz, self.currentUser)
     
+    def createQuizButtonCommand(self) -> None:
+        """This function is tied to the create quiz button and the create quiz option on the top menu."""
+        import quizCreator
+        # Launches the quiz creator window
+        quizCreator.QuizCreatorDialog(self.tk, self)
+    
     def importQuizButtonCommand(self) -> None:
         """This function is tied to the import quiz button and the import quiz option on the top menu."""
         import quiz
@@ -449,6 +455,7 @@ class MainApp(object):
             return
         # Imports the quiz if the user has selected a file.
         q = quiz.Quiz.importQuiz(filename)
+        # TODO: Add imported quiz to quiz browser (if successful).
     
     def endApplication(self) -> None:
         """Called when the application is ending."""
@@ -478,5 +485,5 @@ def startGUI() -> None:
     app.database.dispose()
 
 if(__name__ == "__main__"):
-    # This will only run if this file is run directly. It will not run if imported as a module.
+    # This will only run if this file is run directly. It will not run if this file is imported as a module.
     startGUI()

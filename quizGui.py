@@ -1,4 +1,4 @@
-# This file will handle the GUI for users answering the questions on a quiz.
+"""This file will handle the GUI for users answering the questions on a quiz."""
 
 import tkinter as tk
 import tkinter.ttk as ttk

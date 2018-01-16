@@ -50,12 +50,3 @@ class User(object):
         False if failed to delete.
         """
         pass # TODO: Add code to delete from database.
-
-""" sort of deprecated -- code only needs to be called once, currently in mainmenu.py       
-    def loadUsers(): # This doesn't get called on a User object, but the User class (a static method).
-        ""."
-        Takes no arguments
-        Returns a list of users from the database.
-        ""."
-        pass # TODO: Add code
-"""
