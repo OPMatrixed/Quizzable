@@ -51,7 +51,7 @@ class QuizCreatorDialog(object):
         self.difficultyCombobox = ttk.Combobox(self.window, state = "readonly", values = [1, 2, 3, 4, 5])
         self.tagsEntry = tk.Entry(self.window)
         self.finishButton = tk.Button(self.window, text = "Finish Quiz")
-        self.addQuestionButton = tk.Button(self.window, text = "Add another question")
+        self.addQuestionButton = tk.Button(self.window, text = "Add another question", command = self.addNewQuestion)
         self.horizontalSeparator = ttk.Separator(self.window, orient = "horizontal")
         
         self.nameLabel.grid(row = 0, column = 0)
@@ -74,7 +74,7 @@ class QuizCreatorDialog(object):
         self.frameScrollbar.config(command = self.questionsCanvas.yview)
         
         self.questionsCanvas.grid(row = 4, column = 0, columnspan = 5, sticky = tk.W+tk.E+tk.N+tk.S, pady = 10)
-        self.frameScrollbar.grid(row = 4, column = 5, sticky = tk.N+tk.S)
+        self.frameScrollbar.grid(row = 0, column = 5, rowspan = 5, sticky = tk.N+tk.S)
         
         self.questionsFrame = tk.Frame(self.window)
         self.questionFrameID = self.questionsCanvas.create_window((0, 0), window = self.questionsFrame, anchor = tk.N+tk.W)
@@ -85,7 +85,7 @@ class QuizCreatorDialog(object):
         for i in range(7):
             self.questionsFrame.grid_columnconfigure(i, weight = 1, minsize = 40)
         
-        self.addNewQuestionButton = tk.Button(self.questionsFrame, text = "Add new question", command = self.addNewQuestion)
+        self.addNewQuestionButton = tk.Button(self.questionsFrame, text = "Add another question", command = self.addNewQuestion)
         self.addNewQuestionButton.grid(row = 1000, column = 0, columnspan = 8)
         
         self.questions = {}
@@ -105,6 +105,8 @@ class QuizCreatorDialog(object):
         self.frameAnswer4Label.grid(row = 0, column = 4)
         self.frameHintLabel.grid(row = 0, column = 5)
         self.frameHelpLabel.grid(row = 0, column = 6)
+        
+        self.addNewQuestion()
     
     def addNewQuestion(self):
         myindex = self.questionIndex
@@ -118,13 +120,13 @@ class QuizCreatorDialog(object):
         help = tk.Entry(self.questionsFrame)
         deleteButton = tk.Button(self.questionsFrame, text = "X", command = lambda: self.removeQuestion(myindex))
         
-        question.grid(row = self.questionIndex, column = 0)
-        correctAnswer.grid(row = self.questionIndex, column = 1)
-        answer2.grid(row = self.questionIndex, column = 2)
-        answer3.grid(row = self.questionIndex, column = 3)
-        answer4.grid(row = self.questionIndex, column = 4)
-        hint.grid(row = self.questionIndex, column = 5)
-        help.grid(row = self.questionIndex, column = 6)
+        question.grid(row = self.questionIndex, column = 0, sticky = tk.W+tk.E)
+        correctAnswer.grid(row = self.questionIndex, column = 1, sticky = tk.W+tk.E)
+        answer2.grid(row = self.questionIndex, column = 2, sticky = tk.W+tk.E)
+        answer3.grid(row = self.questionIndex, column = 3, sticky = tk.W+tk.E)
+        answer4.grid(row = self.questionIndex, column = 4, sticky = tk.W+tk.E)
+        hint.grid(row = self.questionIndex, column = 5, sticky = tk.W+tk.E)
+        help.grid(row = self.questionIndex, column = 6, sticky = tk.W+tk.E)
         deleteButton.grid(row = self.questionIndex, column = 7)
         
         self.questions[myindex] = [question, correctAnswer, answer2, answer3, answer4, hint, help, deleteButton]
@@ -133,6 +135,34 @@ class QuizCreatorDialog(object):
         for i in range(8):
             self.questions[index][i].destroy()
         del self.questions[index]
+    
+    def submit(self):
+        """Gets all the details and questions and saves them in the database."""
+        import quiz
+        title = self.nameEntry.get()
+        subject = self.subjectCombobox.get()
+        examBoard = self.examBoardCombobox.get()
+        difficulty = self.difficultyCombobox.get()
+        tags = self.tagsEntry.get()
+        questions = []
+        for i in self.questions.keys():
+            questionText = self.questions[i][0].get()
+            correctAnswer = self.questions[i][1].get()
+            otherAnswers = []
+            answer2 = self.questions[i][2].get()
+            answer3 = self.questions[i][3].get()
+            answer4 = self.questions[i][4].get()
+            if(answer2):
+                otherAnswers.append(answer2)
+            if(answer3):
+                otherAnswers.append(answer3)
+            if(answer4):
+                otherAnswers.append(answer4)
+            hint = self.questions[i][5].get()
+            help = self.questions[i][6].get()
+            # TODO: VALIDATE
+            questions.append(quiz.Question(-1, questionText, correctAnswer, otherAnswers, -1, hint, help))
+        
     
     def exit(self):
         """This function is run when the window is being closed without saving."""

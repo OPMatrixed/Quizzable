@@ -172,7 +172,7 @@ class ActiveQuizDialog(object):
                 if(self.currentState == 0):
                     # If they have not entered an answer, and the window is in the state where it is awaiting an answer:
                     # Calculate the time remaining.
-                    timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock()
+                    timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock() # TODO: Changing the timer setting should affect this.
                     if(timeRemaining <= 0):
                         # If the user has ran out of time:
                         # Display 'Out of time!', in red, where the countdown timer was.

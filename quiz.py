@@ -15,19 +15,55 @@ class Question(object):
         self.id = id
         self.hint = hint
         self.help = help
-        # If the question doesn't have an ID, add it to the database.
-        if(id == -1):
-            # As a different amount of wrong answers can be entered into records, the SQL statement should change depending on how many wrong
-            # answers there are. If there is one wrong answer, don't modify the original statement.
-            # If there are two or three wrong answers, add their respective column names to the SQL statement.
-            answerAdditionString = ""
-            if(len(self.otherAnswers) == 3):
-                answerAdditionString = " Answer3, Answer4,"
-            elif(len(self.otherAnswers) == 2):
-                answerAdditionString = " Answer3,"
-            # The "*self.otherAnswers" on the following line goes through each element in the list, and passes each as a separate argument.
-            self.dbm.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2,"+answerAdditionString+" Hint, Help) VALUES (?,?,?,?,?,?)",
-                    self.quizID, self.question, self.correctAnswer, self.correctAnswer, *self.otherAnswers, self.hint, self.help)
+    
+    def validate(self):
+        """
+        Running this function validates whether all of the variables are correct and ready to use and/or store in the database.
+        If something goes wrong, it returns a string containing an error message of the first error it encountered.
+        If all the checks pass, it doesn't return anything.
+        """
+        # Type checks
+        if(not isinstance(self.question, str)):
+            return "Question is not a string."
+        if(not isinstance(self.correctAnswer, str)):
+            return "Correct answer is not a string."
+        if(not isinstance(self.hint, str)):
+            return "Hint is not a string."
+        if(not isinstance(self.help, str)):
+            return "Help is not a string."
+        if(not isinstance(self.otherAnswers, list)):
+            return "Other answers is not a list."
+        # Presence and length checks on the question string
+        if(not self.question):
+            return "No question entered."
+        if(len(self.question) < 4):
+            return "Question less than 4 characters."
+        if(len(self.question) > 300):
+            return "Question longer than 300 characters."
+        # Presenece and length checks on the correct answer string
+        if(not self.correctAnswer):
+            return "No correct answer."
+        if(len(self.correctAnswer) > 150):
+            return "Correct answer is longer than 150 characters."
+        # Checks on the other answer strings
+        if(not self.otherAnswers):
+            return "No wrong answers."
+        if(len(self.otherAnswer > 3):
+            return "Too many other answers."
+        for i in range(len(self.otherAnswers)):
+            # Looping through all the other answer strings.
+            if(not isinstance(self.otherAnswers[i], str)):
+                return "Wrong answer " + str(i + 1) + " is not a string."
+            if(not self.otherAnswers[i]):
+                return "No wrong answer no. " + str(i + 1)
+            if(len(self.otherAnswers[i]) > 150):
+                return "Wrong answer no. " + str(i + 1) + " is too long."
+        # Length check on hint/help variables, and these variables can be empty strings.
+        if(len(self.hint) > 400):
+            return "Hint is longer than 400 characters."
+        if(len(self.help) > 2000):
+            return "Help is longer than 2000 characters."
+        # If it reaches here, all the checks have passed and the function returns nothing.
     
     def getShuffledAnswers(self) -> list:
         """
@@ -48,6 +84,26 @@ class Question(object):
         answers.insert(index, self.correctAnswer)
         return answers, index
     
+    def addToDatabase(self) -> None:
+        # As a different amount of wrong answers can be entered into records, the SQL statement should change depending on how many wrong
+        # answers there are. If there is one wrong answer, don't modify the original statement.
+        # If there are two or three wrong answers, add their respective column names to the SQL statement.
+        check = self.validate()
+        if(check):
+            # If the validation of the question fails, don't save to the database, instead raise an error.
+            raise ValueError("Question: " + check)
+        answerAdditionString = ""
+        answerInputQuestionMarks = ""
+        if(len(self.otherAnswers) == 3):
+            answerAdditionString = " Answer3, Answer4,"
+            answerInputQuestionMarks = ",?,?"
+        elif(len(self.otherAnswers) == 2):
+            answerAdditionString = " Answer3,"
+            answerInputQuestionMarks = ",?"
+        # The "*self.otherAnswers" on the following line goes through each element in the list, and passes each as a separate argument.
+        self.dbm.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2," + answerAdditionString + " Hint, Help) VALUES (?,?,?,?,?,?" + answerInputQuestionMarks + ")",
+                self.quizID, self.question, self.correctAnswer, self.correctAnswer, *self.otherAnswers, self.hint, self.help)
+    
     def getQuestionFromDatabaseRecord(record: tuple) -> 'Question': # This is not called on an object, but the class itself.
         """This will take a record from the database as a tuple and return a Question object from the data it is given."""
         # The following lines get each of the required data fields to make a Question object.
@@ -55,7 +111,8 @@ class Question(object):
         quizID = record[1]
         question = record[2]
         correctAnswer = record[3]
-        otherAnswers = [i for i in record[4:7] if i] # This creates a list of the other answers, but won't include the answers that are null in the database (i.e. if there are only 1 or 2 other answers).
+        # This creates a list of the other answers, but won't include the answers that are null in the database (i.e. if there are only 1 or 2 other answers).
+        otherAnswers = [i for i in record[4:7] if i]
         hint = record[7]
         help = record[8]
         return Question(quizID, question, correctAnswer, otherAnswers, questionID, hint, help) # This generates the Question object and returns it.
@@ -93,8 +150,11 @@ class Quiz(object):
     
     def getQuiz(id: int, database) -> 'Quiz': # This is not called on an object, but the class itself.
         """This will load a quiz given a quiz ID, and return it as a Quiz object."""
+        # Queries the database to find the quiz record which is to be loaded.
         rows = database.execute("SELECT * FROM `Quizzes` WHERE `QuizID`=?;", id)
-        if(rows): # This checks if the 'rows' list is not empty. This uses the property that empty lists in python are treated as false by if and while statements, and non-empty lists are true.
+        # This checks if the 'rows' list is not empty. This uses the property that empty lists in python are treated as false by if and while statements, and non-empty lists are true.
+        if(rows):
+            # Goes through each field in the record and saves it in a 
             record = rows[0]
             questionRows = database.execute("SELECT * FROM `Questions` WHERE `QuizID`=?;", id)
             questionList = [Question.getQuestionFromDatabaseRecord(i) for i in questionRows] # This turns all the question records to a list of question objects.
