@@ -162,7 +162,6 @@ class QuizCreatorDialog(object):
             help = self.questions[i][6].get()
             # TODO: VALIDATE
             questions.append(quiz.Question(-1, questionText, correctAnswer, otherAnswers, -1, hint, help))
-        
     
     def exit(self):
         """This function is run when the window is being closed without saving."""

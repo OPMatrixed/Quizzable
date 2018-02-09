@@ -48,7 +48,7 @@ class Question(object):
         # Checks on the other answer strings
         if(not self.otherAnswers):
             return "No wrong answers."
-        if(len(self.otherAnswer > 3):
+        if(len(self.otherAnswer > 3)):
             return "Too many other answers."
         for i in range(len(self.otherAnswers)):
             # Looping through all the other answer strings.
