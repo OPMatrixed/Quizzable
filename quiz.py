@@ -48,7 +48,7 @@ class Question(object):
         # Checks on the other answer strings
         if(not self.otherAnswers):
             return "No wrong answers."
-        if(len(self.otherAnswer > 3)):
+        if(len(self.otherAnswers) > 3):
             return "Too many other answers."
         for i in range(len(self.otherAnswers)):
             # Looping through all the other answer strings.
@@ -58,6 +58,8 @@ class Question(object):
                 return "No wrong answer no. " + str(i + 1)
             if(len(self.otherAnswers[i]) > 150):
                 return "Wrong answer no. " + str(i + 1) + " is too long."
+            if(self.otherAnswers[i] == self.correctAnswer):
+                return "Wrong answer no. " + str(i + 1) + " is the same as the correct answer."
         # Length check on hint/help variables, and these variables can be empty strings.
         if(len(self.hint) > 400):
             return "Hint is longer than 400 characters."
@@ -84,7 +86,7 @@ class Question(object):
         answers.insert(index, self.correctAnswer)
         return answers, index
     
-    def addToDatabase(self) -> None:
+    def addToDatabase(self, database) -> None:
         # As a different amount of wrong answers can be entered into records, the SQL statement should change depending on how many wrong
         # answers there are. If there is one wrong answer, don't modify the original statement.
         # If there are two or three wrong answers, add their respective column names to the SQL statement.
@@ -101,8 +103,8 @@ class Question(object):
             answerAdditionString = " Answer3,"
             answerInputQuestionMarks = ",?"
         # The "*self.otherAnswers" on the following line goes through each element in the list, and passes each as a separate argument.
-        self.dbm.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2," + answerAdditionString + " Hint, Help) VALUES (?,?,?,?,?,?" + answerInputQuestionMarks + ")",
-                self.quizID, self.question, self.correctAnswer, self.correctAnswer, *self.otherAnswers, self.hint, self.help)
+        database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2," + answerAdditionString + " Hint, Help) VALUES (?,?,?,?,?,?" + answerInputQuestionMarks + ")",
+                self.quizID, self.question, self.correctAnswer, *self.otherAnswers, self.hint, self.help)
     
     def getQuestionFromDatabaseRecord(record: tuple) -> 'Question': # This is not called on an object, but the class itself.
         """This will take a record from the database as a tuple and return a Question object from the data it is given."""

@@ -50,8 +50,13 @@ class ActiveQuizDialog(object):
         self.buttonFont = tkfont.Font(family = "Helvetica", size = 12)
         
         # The text labels in the top 3 rows.
-        self.quizNameLabel                = tk.Label(self.window, text = quiz.name, anchor = tk.NW, font = self.quizNameFont)
-        self.quizSubjectAndExamBoardLabel = tk.Label(self.window, text = parent.subjectDictionary[quiz.subject] + " - " + parent.examboardDictionary[quiz.examBoard], anchor = tk.NW)
+        self.quizNameLabel = tk.Label(self.window, text = quiz.name, anchor = tk.NW, font = self.quizNameFont)
+        subjectExamBoard = []
+        if(quiz.subject in parent.subjectDictionary.keys()):
+            subjectExamBoard.append(parent.subjectDictionary[quiz.subject])
+        if(quiz.examBoard in parent.examboardDictionary.keys()):
+            subjectExamBoard.append(parent.subjectDictionary[quiz.examBoard])
+        self.quizSubjectAndExamBoardLabel = tk.Label(self.window, text =  " - ".join(subjectExamBoard), anchor = tk.NW)
         # Lots of arguments on the next line of code. anchor = tk.W means that all new lines are left-aligned.
         # justify = tk.LEFT means that the whole chunk of text should be left-aligned. Both anchor and justify are needed because they have small differences.
         # wraplength is the amount of pixels the text can fill horizontally before needing to go onto a new line.
@@ -214,10 +219,12 @@ class ActiveQuizDialog(object):
             # Keep the window alive before closing it, so the user has time to read the results.
             while(self.running):
                 time.sleep(0.1)
-        
+        # Reload the quiz list in case the best attempt of the quiz has changed.
+        self.parent.reloadQuizList()
+        self.parent.unloadSidePanel()
+        self.parent.loadSidePanel()
         # Destroy the window after everything has finished.
         self.window.destroy()
-        
     
     def unloadQuestionView(self) -> None:
         """This method removes all the buttons of the quiz, ready to display the end screen statistics."""

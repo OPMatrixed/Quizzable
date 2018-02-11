@@ -63,6 +63,9 @@ class MainApp(object):
         if(subjectQueryResults):
             for i in subjectQueryResults:
                 self.subjectDictionary[i[0]] = i[1]
+        # Inverse dictionaries for backwards lookups
+        self.inverseSubjectDictionary = {v: k for k, v in self.subjectDictionary.items()}
+        self.inverseExamboardDictionary = {v: k for k, v in self.examboardDictionary.items()}
         # The quiz the user has currently selected, starts off as None.
         self.currentlySelectedQuiz = None
     
@@ -295,6 +298,22 @@ class MainApp(object):
         self.quizListBoxExamBoard.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxBestAttempt.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         
+        self.reloadQuizList()
+        
+        self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky = tk.W+tk.E+tk.N+tk.S)
+        # End of lists frame.
+        self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
+    
+    def reloadQuizList(self):
+        """This reloads the quiz list, to load all the quizzes on to the quiz browser, and to refresh it if the list changes or a filter/search is applied."""
+        # If the quiz browser hasn't been loaded, don't run this method if it's called.
+        if(self.state != MainWindowStates.quizBrowser):
+            return
+        # Clear the lists
+        self.quizListBoxNames.delete(0, tk.END)
+        self.quizListBoxSubject.delete(0, tk.END)
+        self.quizListBoxExamBoard.delete(0, tk.END)
+        self.quizListBoxBestAttempt.delete(0, tk.END)
         # This loads all the quiz records from the database, but ignores each quiz's questions.
         quizQueryResult = self.database.execute("SELECT * FROM `Quizzes`;")
         self.quizIDs = []
@@ -315,13 +334,14 @@ class MainApp(object):
             self.quizTags[i[0]] = i[5].split(",") if i[5] else []
             # This is adds each quiz to each of the lists.
             self.quizListBoxNames.insert(tk.END, i[1])
-            self.quizListBoxSubject.insert(tk.END, self.subjectDictionary[i[2]])
-            self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary[i[3]])
-            self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
-        
-        self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky = tk.W+tk.E+tk.N+tk.S)
-        # End of lists frame.
-        self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
+            self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
+            self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
+            bestAttempt = self.database.execute("SELECT * FROM `Results` WHERE `UserID`=? AND `QuizID`=? ORDER BY `Score` DESC;",
+                                    float(self.currentUser.id), float(i[0]))
+            if(bestAttempt and len(bestAttempt)):
+                self.quizListBoxBestAttempt.insert(tk.END, str(round(bestAttempt[0][3] * 100, 1)) + "% - " + str(round(bestAttempt[0][6], 1)) + "s")
+            else:
+                self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
     
     def loadSidePanel(self) -> None:
         """
@@ -378,17 +398,6 @@ class MainApp(object):
         self.tk.grid_columnconfigure(2, weight = 0)
         self.tk.grid_columnconfigure(3, weight = 0, minsize = 0)
         
-        # Deleting widgets in the side panel
-        self.quizListSideName.destroy()
-        self.quizListSideSubject.destroy()
-        self.quizListSideExamboard.destroy()
-        self.quizListSideTotalQuestions.destroy()
-        self.quizListSideBestAttempt.destroy()
-        # Deleting buttons in side panel
-        self.quizListSideLaunchQuizButton.destroy()
-        self.quizListSideEditQuizButton.destroy()
-        self.quizListSideExportQuizButton.destroy()
-        self.quizListSideDeleteQuizButton.destroy()
         # The search bar
         self.quizBrowserSearchLabel.destroy()
         self.quizBrowserSearchEntry.destroy()
@@ -411,12 +420,26 @@ class MainApp(object):
         self.quizListBoxSubject.destroy()
         self.quizListBoxExamBoard.destroy()
         self.quizListBoxBestAttempt.destroy()
-        
         # Removing widget frames
-        self.quizListSidePanel.destroy()
-        self.quizListSideButtonFrame.destroy()
         self.quizBrowserSearchFrame.destroy()
         self.quizListFrame.destroy()
+    
+    def unloadSidePanel(self):
+        """This removes all the widgets from the side panel."""
+        # Deleting widgets in the side panel
+        self.quizListSideName.destroy()
+        self.quizListSideSubject.destroy()
+        self.quizListSideExamboard.destroy()
+        self.quizListSideTotalQuestions.destroy()
+        self.quizListSideBestAttempt.destroy()
+        # Deleting buttons in side panel
+        self.quizListSideLaunchQuizButton.destroy()
+        self.quizListSideEditQuizButton.destroy()
+        self.quizListSideExportQuizButton.destroy()
+        self.quizListSideDeleteQuizButton.destroy()
+        # Removing widget frames
+        self.quizListSideButtonFrame.destroy()
+        self.quizListSidePanel.destroy()
     
     def selectQuiz(self, *args) -> None:
         """This is run every time the user makes a change to the quiz currently selected in the list."""
@@ -433,8 +456,14 @@ class MainApp(object):
         self.currentlySelectedQuiz = n
         # This changes all the text labels on the right to the details of the currently selected quiz.
         self.quizListSideName.config(text = self.quizNames[self.currentlySelectedQuiz])
-        self.quizListSideSubject.config(text = self.subjectDictionary[self.quizSubjects[self.currentlySelectedQuiz]])
-        self.quizListSideExamboard.config(text = self.examboardDictionary[self.quizExamboards[self.currentlySelectedQuiz]])
+        if(self.quizSubjects[self.currentlySelectedQuiz]):
+            self.quizListSideSubject.config(text = self.subjectDictionary[self.quizSubjects[self.currentlySelectedQuiz]])
+        else:
+            self.quizListSideSubject.config(text = "")
+        if(self.quizExamboards[self.currentlySelectedQuiz]):
+            self.quizListSideExamboard.config(text = self.examboardDictionary[self.quizExamboards[self.currentlySelectedQuiz]])
+        else:
+            self.quizListSideExamboard.config(text = "")
         numberOfQuestions = self.quizQuestionNumbers[self.currentlySelectedQuiz]
         self.quizListSideTotalQuestions.config(text = str(numberOfQuestions) + " question"
                                     + ("s" if numberOfQuestions != 1 else "") + " in this quiz.\nDifficulty: " + str(self.quizDifficulties[self.currentlySelectedQuiz]))
@@ -522,6 +551,7 @@ class MainApp(object):
         self.state = MainWindowStates.login
         self.currentUser = None
         self.unloadQuizBrowserScreen()
+        self.unloadSidePanel()
         self.loadLoginScreen()
     
     def endApplication(self) -> None:
