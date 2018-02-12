@@ -187,23 +187,17 @@ class UserSettingsDialog(object):
         self.timerSettingsLabel.grid(row = 3, column = 0)
         
         # This queries the database to get the names of the examboards
-        examboardQueryResults = self.parent.database.execute("SELECT * FROM `Examboards`;")
-        examboardList = []
-        if(self.parent.currentUser.defaultExamBoard == -1):
-            examboardList = ["No preference"]
-        else:
-            if(examboardQueryResults):
-                for i in examboardQueryResults:
-                    if(i[0] == self.parent.currentUser.defaultExamBoard):
-                        examboardList = [i[1], "No preference"]
-        if(examboardQueryResults):
-            for i in examboardQueryResults:
-                if(i[0] != self.parent.currentUser.defaultExamBoard):
-                    examboardList.append(i[1])
+        examBoardQueryResults = self.parent.database.execute("SELECT * FROM `Examboards`;")
+        examBoardList = ["No preference"]
+        if(examBoardQueryResults):
+            examBoardList += [i[1] for i in examBoardQueryResults]
+        # To set the user's current exam board as the default value in the field, this code must run
+        self.currentExamBoard = tk.StringVar()
+        self.currentExamBoard.set(self.parent.examboardDictionary[self.parent.currentUser.defaultExamBoard])
         
         # The actual entry fields for the user settings.
         # Exam board entry is a combobox. It gets the options from the exam boards table in the database.
-        self.defaultExamBoardEntry = ttk.Combobox(self.window, values = examboardList)
+        self.defaultExamBoardEntry = ttk.Combobox(self.window, values = examBoardList, textvariable = self.currentExamBoard, state = "readonly")
         # The three timer button options represent three different timer settings. These are the only three, so I used buttons rather than drop down.
         self.timerButton1 = tk.Button(self.window, text = "No timer (easy)", command = lambda: self.changeTimeSetting(0))
         self.timerButton2 = tk.Button(self.window, text = "Long timer (medium)", command = lambda: self.changeTimeSetting(1))

@@ -30,6 +30,8 @@ class QuizCreatorDialog(object):
         # Add all the widgets to the window.
         self.loadScreenElements()
         self.setupQuestionsFrame()
+        # Adds an empty question row when launching the window.
+        self.addNewQuestion()
     
     def loadScreenElements(self):
         """This loads all the widgets onto the screen."""
@@ -40,6 +42,13 @@ class QuizCreatorDialog(object):
         self.window.grid_rowconfigure(3, pad = 12)
         self.window.grid_rowconfigure(4, weight = 1)
         
+        # Creating variables to be changed by user
+        self.nameString = tk.StringVar()
+        self.subjectString = tk.StringVar()
+        self.examBoardString = tk.StringVar()
+        self.difficultyString = tk.StringVar()
+        self.tagsString = tk.StringVar()
+        
         # Creating the labels for each entry field.
         self.nameLabel = tk.Label(self.window, text = "Name:")
         self.examBoardLabel = tk.Label(self.window, text = "Exam board:")
@@ -47,11 +56,11 @@ class QuizCreatorDialog(object):
         self.difficultyLabel = tk.Label(self.window, text = "Difficulty:")
         self.tagsLabel = tk.Label(self.window, text = "Tags (separate using commas):")
         # Creating the text fields and drop down menus.
-        self.nameEntry = tk.Entry(self.window)
-        self.examBoardCombobox = ttk.Combobox(self.window, state = "readonly", values = ["None"] + list(self.parent.examboardDictionary.values()))
-        self.subjectCombobox = ttk.Combobox(self.window, state = "readonly", values = ["None"] + list(self.parent.subjectDictionary.values()))
-        self.difficultyCombobox = ttk.Combobox(self.window, state = "readonly", values = [1, 2, 3, 4, 5])
-        self.tagsEntry = tk.Entry(self.window)
+        self.nameEntry = tk.Entry(self.window, textvariable = self.nameString)
+        self.examBoardCombobox = ttk.Combobox(self.window, textvariable = self.examBoardString, state = "readonly", values = ["None"] + list(self.parent.examboardDictionary.values()))
+        self.subjectCombobox = ttk.Combobox(self.window, textvariable = self.subjectString, state = "readonly", values = ["None"] + list(self.parent.subjectDictionary.values()))
+        self.difficultyCombobox = ttk.Combobox(self.window, textvariable = self.difficultyString, state = "readonly", values = [1, 2, 3, 4, 5])
+        self.tagsEntry = tk.Entry(self.window, textvariable = self.tagsString)
         self.finishButton = tk.Button(self.window, text = "Finish Quiz", command = self.submit)
         self.addQuestionButton = tk.Button(self.window, text = "Add another question", command = self.addNewQuestion)
         # Adding visual horizontal separator bar between questions and quiz data.
@@ -116,8 +125,6 @@ class QuizCreatorDialog(object):
         self.frameAnswer4Label.grid(row = 0, column = 4)
         self.frameHintLabel.grid(row = 0, column = 5)
         self.frameHelpLabel.grid(row = 0, column = 6)
-        # Adds an empty question row when launching the window.
-        self.addNewQuestion()
     
     def addNewQuestion(self):
         """This generates a new row of question field entries below the last added question row."""
@@ -157,11 +164,11 @@ class QuizCreatorDialog(object):
         """Gets all the details and questions and saves them in the database."""
         import quiz
         # Get the quiz details from the entry boxes.
-        title = self.nameEntry.get().strip()
-        subject = self.subjectCombobox.get()
-        examBoard = self.examBoardCombobox.get()
-        difficulty = self.difficultyCombobox.get()
-        tags = self.tagsEntry.get()
+        title = self.nameString.get().strip()
+        subject = self.subjectString.get()
+        examBoard = self.examBoardString.get()
+        difficulty = self.difficultyString.get()
+        tags = self.tagsString.get()
         # Title length check, show an error message if it's too long or too short.
         if(len(title) < 3):
             tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = self.window)
@@ -230,7 +237,7 @@ class QuizCreatorDialog(object):
             subjectID = float(subjectID)
         
         if(examBoard):
-            examBoardID = self.parent.examBoardDictionary.get(examBoard, None)
+            examBoardID = self.parent.inverseExamboardDictionary.get(examBoard, None)
         if(examBoardID != None):
             examBoardID = float(examBoardID)
         
@@ -258,5 +265,101 @@ class QuizCreatorDialog(object):
     
     def exit(self):
         """This function is run when the window is being closed without saving."""
-        # TODO: Ask user if they want to save the quiz.
-        self.window.destroy()
+        # TODO: Check if user has entered data into the fields on the window.
+        if(tkmb.askyesno("Close without saving", "Are you sure you want to exit? The quiz hasn't been saved. To save, click the 'Finish Quiz' button.", parent = self.window)):
+            # The line above asks if the user is sure they want to exit with a popup yes/no dialog, if so then it closes the window with the line below.
+            # If the user clicks 'No', then the prompt closes and nothing else happens.
+            self.window.destroy()
+
+class QuizEditorDialog(QuizCreatorDialog):
+    """This inherits the methods of QuizCreatorDialog."""
+    def __init__(self, toplevel: tk.Tk, parent, quiz):
+        """
+        This is the quiz editor window, and this constructor method is run when creating the QuizEditorDialog object.
+        
+        toplevel is the tkinter object of the parent window.
+        parent in the MainApp object, unless another dialog opens this window.
+        """
+        self.parent = parent
+        self.toplevel = toplevel
+        self.quiz = quiz
+        # This creates the window. padx and pady here add 5 pixels padding horizontally and vertically respectively
+        # This is to stop the widgets on the window from touching the edges of the window, which doesn't look that good.
+        self.window = tk.Toplevel(toplevel, padx = 5, pady = 5)
+        # Dimensions of the window: 500 pixels wide by 300 pixels high.
+        self.window.geometry("900x600")
+        # The minimum dimensions of the window, as this window is re-sizable.
+        self.window.minsize(width = 600, height = 500)
+        # Setting the title of the window.
+        self.window.title(quiz.name + " - Edit Quiz - Quizzable")
+        # This makes the self.quit method run when the window is closed without clicking the "Finish Quiz" button.
+        self.window.protocol("WM_DELETE_WINDOW", self.quit)
+        # Add all the widgets to the window.
+        self.loadScreenElements()
+        self.setupQuestionsFrame()
+        # Need to rebind the "Finish Quiz" button to run the save changes method, rather than save a new quiz to the database method that was inherited.
+        self.finishButton.config(command = self.update)
+        # For editing a quiz, all the original quiz data needs to be re-entered.
+        self.fillInExistingData()
+        
+        for i in self.quiz.questions:
+            self.addQuestion(i)
+    
+    def fillInExistingData(self):
+        self.nameString.set(self.quiz.name)
+        self.subjectString.set(self.parent.subjectDictionary[self.quiz.subject])
+        self.examBoardString.set(self.parent.examboardDictionary[self.quiz.examBoard])
+        self.difficultyString.set(str(self.quiz.difficulty))
+        self.tagsString.set(",".join(self.quiz.tags))
+        
+    def addQuestion(self, currentQuestion):
+        """This generates a new row of question field entries below the last added question row."""
+        myindex = self.questionIndex
+        self.questionIndex += 1
+        # Creating all of the text entries.
+        question = tk.Entry(self.questionsFrame)
+        correctAnswer = tk.Entry(self.questionsFrame)
+        answer2 = tk.Entry(self.questionsFrame)
+        answer3 = tk.Entry(self.questionsFrame)
+        answer4 = tk.Entry(self.questionsFrame)
+        hint = tk.Entry(self.questionsFrame)
+        help = tk.Entry(self.questionsFrame)
+        # Adding a delete button that will remove the question if the "X" button is clicked.
+        deleteButton = tk.Button(self.questionsFrame, text = "X", command = lambda: self.removeQuestion(myindex))
+        # Positioning all of the entries on the current question row.
+        question.grid(row = self.questionIndex, column = 0, sticky = tk.W+tk.E)
+        correctAnswer.grid(row = self.questionIndex, column = 1, sticky = tk.W+tk.E)
+        answer2.grid(row = self.questionIndex, column = 2, sticky = tk.W+tk.E)
+        answer3.grid(row = self.questionIndex, column = 3, sticky = tk.W+tk.E)
+        answer4.grid(row = self.questionIndex, column = 4, sticky = tk.W+tk.E)
+        hint.grid(row = self.questionIndex, column = 5, sticky = tk.W+tk.E)
+        help.grid(row = self.questionIndex, column = 6, sticky = tk.W+tk.E)
+        deleteButton.grid(row = self.questionIndex, column = 7)
+        
+        # Inserting the data from the existing quiz.
+        question.insert(0, currentQuestion.question)
+        correctAnswer.insert(0, currentQuestion.correctAnswer)
+        answer2.insert(0, currentQuestion.otherAnswers[0])
+        if(len(currentQuestion.otherAnswers) > 1):
+            answer3.insert(0, currentQuestion.otherAnswers[1])
+        if(len(currentQuestion.otherAnswers) > 2):
+            answer4.insert(0, currentQuestion.otherAnswers[2])
+        if(currentQuestion.hint):
+            hint.insert(0, currentQuestion.hint)
+        if(currentQuestion.help):
+            help.insert(0, currentQuestion.help)
+        
+        # Adding the row of entries to the quiz dictionary, to keep references to the entry fields so the data inside them can be gathered when the quiz is saved.
+        self.questions[myindex] = [question, correctAnswer, answer2, answer3, answer4, hint, help, deleteButton]
+    
+    def update(self):
+        """This method updates all of the database entries, deletes questions that have been removed and adds questions that have been added."""
+        pass # TODO
+    
+    def quit(self):
+        """This function is run when the window is being closed without saving."""
+        # TODO: Check if fields have changed.
+        if(tkmb.askyesno("Close without saving", "Are you sure you want to exit? The quiz hasn't been saved. To save, click the 'Finish Quiz' button.", parent = self.window)):
+            # The line above asks if the user is sure they want to exit with a popup yes/no dialog, if so then it closes the window with the line below.
+            # If the user clicks 'No', then the prompt closes and nothing else happens.
+            self.window.destroy()

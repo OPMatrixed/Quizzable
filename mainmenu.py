@@ -23,7 +23,7 @@ class MainWindowStates:
 
 class MainApp(object):
     appName = "Quizzable"
-    appVersion = "Alpha v0.5"
+    appVersion = "Alpha v0.6"
     def __init__(self, tkobj: tk.Tk) -> None:
         """
         This method is called when MainApp is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
@@ -135,7 +135,7 @@ class MainApp(object):
         self.tk.grid_rowconfigure(6, weight = 2)
         self.tk.grid_rowconfigure(7, weight = 1)
         # Login screen heading text
-        self.loginLabel = tk.Label(self.tk, text="User Selection", font=headerFont)
+        self.loginLabel = tk.Label(self.tk, text="User Selection", font = headerFont)
         
         userList = []
         # This queries the database to get the usernames of all the users.
@@ -375,7 +375,7 @@ class MainApp(object):
         self.quizListSideButtonFrame.grid_rowconfigure(3, weight = 1)
         # The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
         self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz, state = tk.DISABLED)
-        self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8, state = tk.DISABLED)
+        self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8, command = self.editQuiz, state = tk.DISABLED)
         self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8, state = tk.DISABLED)
         self.quizListSideDeleteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8, state = tk.DISABLED)
         # The positioning for the buttons above.
@@ -515,6 +515,22 @@ class MainApp(object):
         quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
         # This then launches the window, passing the loaded quiz as an argument.
         quizGui.ActiveQuizDialog(self.tk, self, quiz, self.currentUser)
+    
+    def editQuiz(self):
+        """This launches the quiz window for the currently selected quiz."""
+        import quiz, quizCreator
+        # The following if statements check each list to see if an entry from any of the lists has been selected, and sets the number n to the selected row number.
+        if(self.currentlySelectedQuiz == None):
+            # An error message is shown if there are no rows selected, and this method returns so it doesn't try to load a quiz with id of negative one.
+            # However, the button should be disabled if there is no quiz selected, so this is just a fallback.
+            tkmb.showerror("Edit quiz error", "No quiz selected to launch, please select a quiz by clicking on one from the list.")
+            return
+        
+        print("Editing quiz: " + self.quizNames[self.currentlySelectedQuiz]) # A debugging line, to check if the correct quiz is being loaded.
+        # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
+        quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
+        # This then launches the window, passing the loaded quiz as an argument.
+        quizCreator.QuizEditorDialog(self.tk, self, quiz)
     
     def createQuizButtonCommand(self) -> None:
         """This function is tied to the create quiz button and the create quiz option on the top menu."""
