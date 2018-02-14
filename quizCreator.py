@@ -307,8 +307,10 @@ class QuizEditorDialog(QuizCreatorDialog):
     
     def fillInExistingData(self):
         self.nameString.set(self.quiz.name)
-        self.subjectString.set(self.parent.subjectDictionary[self.quiz.subject])
-        self.examBoardString.set(self.parent.examboardDictionary[self.quiz.examBoard])
+        if(self.quiz.subject):
+            self.subjectString.set(self.parent.subjectDictionary[self.quiz.subject])
+        if(self.quiz.examBoard):
+            self.examBoardString.set(self.parent.examboardDictionary[self.quiz.examBoard])
         self.difficultyString.set(str(self.quiz.difficulty))
         self.tagsString.set(",".join(self.quiz.tags))
         
@@ -354,7 +356,105 @@ class QuizEditorDialog(QuizCreatorDialog):
     
     def update(self):
         """This method updates all of the database entries, deletes questions that have been removed and adds questions that have been added."""
-        pass # TODO
+        import quiz
+        # Get the quiz details from the entry boxes.
+        title = self.nameString.get().strip()
+        subject = self.subjectString.get()
+        examBoard = self.examBoardString.get()
+        difficulty = self.difficultyString.get()
+        tags = self.tagsString.get()
+        # Title length check, show an error message if it's too long or too short.
+        if(len(title) < 3):
+            tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = self.window)
+            return
+        if(len(title) > 70):
+            tkmb.showerror("Title error", "Quiz title is too long, it should be at most 70 characters long (currently: " + str(len(title)) + ").", parent = self.window)
+            return
+        # Regular expression to check if the title has any invalid characters.
+        quizTitleRegex = re.compile('[^a-zA-Z0-9\.\-\? ]')
+        reducedTitle = quizTitleRegex.sub("", title)
+        if(reducedTitle != title):
+            tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = self.window)
+            return
+        # Presence check on difficulty drop-down entry box.
+        if(not difficulty):
+            tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = self.window)
+            return
+        # Length check on tag entry.
+        if(len(tags) > 150):
+            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = self.window)
+            return
+        # Reformatting tags in case the user hasn't entered in the correct format, by removing all whitespace that would be adjacent to a comma.
+        tagList = []
+        for i in tags.split(","):
+            if(i.strip() == ""):
+                continue
+            tagList.append(i.strip())
+        tags = ",".join(tagList)
+        # Validating all the questions.
+        questions = []
+        for i in self.questions.keys():
+            # For each question, get all the entered fields.
+            questionText = self.questions[i][0].get()
+            correctAnswer = self.questions[i][1].get()
+            otherAnswers = []
+            answer2 = self.questions[i][2].get()
+            answer3 = self.questions[i][3].get()
+            answer4 = self.questions[i][4].get()
+            if(answer2):
+                otherAnswers.append(answer2)
+            if(answer3):
+                otherAnswers.append(answer3)
+            if(answer4):
+                otherAnswers.append(answer4)
+            hint = self.questions[i][5].get()
+            help = self.questions[i][6].get()
+            # Create a question object and check if it is valid.
+            q = quiz.Question(-1, questionText, correctAnswer, otherAnswers, -1, hint, help)
+            errorText = q.validate()
+            if(errorText):
+                # If it's invalid, show an error, and then return.
+                tkmb.showerror("Question error", "Question (\"" + errorText + "\") has error: " + errorText, parent = self.window)
+                return
+            questions.append(q)
+        # If there are less than 2 questions, show an error, and the return.
+        if(len(questions) < 2):
+            tkmb.showerror("Question error", "Quiz should have at least 2 questions.", parent = self.window)
+            return
+        # Get the subject and/or exam board ID from the text entry.
+        subjectID = None
+        examBoardID = None
+        # It will only get them if the field has text in it, that isn't "None".
+        if(subject):
+            subjectID = self.parent.inverseSubjectDictionary.get(subject, None)
+        if(subjectID != None):
+            subjectID = float(subjectID)
+        
+        if(examBoard):
+            examBoardID = self.parent.inverseExamboardDictionary.get(examBoard, None)
+        if(examBoardID != None):
+            examBoardID = float(examBoardID)
+        
+        # Check if any other quizzes have the same title. # TODO: Check if other quizzes have same hash.
+        quizzesWithSameTitle = self.parent.database.execute("SELECT * FROM `Quizzes` WHERE `QuizName`=?;", title)
+        if(len(quizzesWithSameTitle) > 0 and quizzesWithSameTitle[0][0] != self.quiz.id):
+            tkmb.showerror("Quiz error", "Quiz name is already in use.", parent = self.window)
+            return
+        
+        # Update the quiz record
+        self.parent.database.execute("UPDATE `Quizzes` SET QuizName=?, SubjectID=?, ExamboardID=?, AmountOfQuestions=?, TagList=?, Difficulty=? WHERE QuizID=?;",
+                                        title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), self.quiz.id)
+        # Remove the old questions
+        self.parent.database.execute("DELETE FROM `Questions` WHERE QuizID=?;", self.quiz.id)
+        # Add the new questions in
+        for i in questions:
+            i.quizID = self.quiz.id
+            i.addToDatabase(self.parent.database)
+        
+        # Reload the quiz list on the quiz browser to show the new quiz.
+        self.parent.reloadQuizList()
+        # Exit the window upon successfully creating the quiz.
+        self.window.destroy()
     
     def quit(self):
         """This function is run when the window is being closed without saving."""

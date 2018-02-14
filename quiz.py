@@ -134,21 +134,13 @@ class Quiz(object):
         self.examBoard = examBoard
         self.questions = questions
     
-    def save(self) -> None:
-        """This will save a quiz to the database."""
-        pass # TODO
-    
     def exportQuiz(self, filename: str) -> None:
         """This will export the quiz into a non-database format, probably XML, YAML or using pickle."""
         pass # TODO
     
     # Methods below are not executed on an object, but the Quiz class itself.
-    # i.e. to use these methods you wouldn't need a quiz object ( q = Quiz(args here); q.loadQuiz(other args here) - this is wrong)
-    # but you still execute them on the Quiz class ( q = Quiz.loadQuiz(args here) - loadQuiz returns a Quiz object, correct way to use ).
-    
-    def getQuizzes() -> list: # This is not called on an object, but the class itself.
-        """This will load the quizzes from the database."""
-        pass # TODO
+    # i.e. to use these methods you wouldn't need a Quiz object ( q = Quiz(args here); q.getQuiz(other args here) - this is wrong)
+    # but you still execute them on the Quiz class ( q = Quiz.getQuiz(args here) - getQuiz returns a Quiz object, correct way to use ).
     
     def getQuiz(id: int, database) -> 'Quiz': # This is not called on an object, but the class itself.
         """This will load a quiz given a quiz ID, and return it as a Quiz object."""
@@ -165,7 +157,7 @@ class Quiz(object):
             examboardID = record[3]
             amountOfQuestions = record[4]
             if(len(questionList) != amountOfQuestions):
-                raise Error("The number of questions in the quiz found doesn't match the expected amount of questions for that quiz.")
+                raise Exception("The number of questions in the quiz found doesn't match the expected amount of questions for that quiz.")
             tags = record[5].split(",") if record[5] else [] # This will generate a list of tags (they are comma-separated), and if there are no tags it will be an empty list.
             difficulty = record[6]
             return Quiz(database, id, title, tags, subjectID, examboardID, difficulty, questionList) # This creates the quiz object and returns it.

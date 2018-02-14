@@ -528,9 +528,16 @@ class MainApp(object):
         
         print("Editing quiz: " + self.quizNames[self.currentlySelectedQuiz]) # A debugging line, to check if the correct quiz is being loaded.
         # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
-        quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
-        # This then launches the window, passing the loaded quiz as an argument.
-        quizCreator.QuizEditorDialog(self.tk, self, quiz)
+        try:
+            quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
+            # This then launches the window, passing the loaded quiz as an argument.
+            quizCreator.QuizEditorDialog(self.tk, self, quiz)
+        except IndexError:
+            # If the quiz isn't found in the database.
+            tkmb.showerror("Error", "The selected quiz wasn't found in the database.", parent = self.tk)
+        except Exception:
+            # If another error occurs.
+            tkmb.showerror("Error", "The selected quiz is invalid or corrupt.", parent = self.tk)
     
     def createQuizButtonCommand(self) -> None:
         """This function is tied to the create quiz button and the create quiz option on the top menu."""
@@ -593,7 +600,8 @@ def startGUI() -> None:
         # The following code gets the error message and prints it as an error.
         import traceback
         import sys
-        print(traceback.format_exc(), sys.stderr)
+        tkmb.showerror("Error occured", traceback.format_exc() + "\n\n" + sys.stderr, parent = master)
+        print(traceback.format_exc() + "\n\n" + sys.stderr)
     # This will run even if the app ends in a crash, as most errors should be caught above.
     app.database.dispose()
 

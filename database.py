@@ -15,7 +15,7 @@ class DatabaseManager(object):
         # The cursor allows you to execute SQL commands on the database.
         self.dbCursor = self.dbcon.cursor()
     
-    def execute(self, *command):
+    def execute(self, *command) -> object:
         """
         This method completely handles executing SQL statements, including select statements.
         Arguments:
