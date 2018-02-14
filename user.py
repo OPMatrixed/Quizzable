@@ -40,13 +40,9 @@ class User(object):
             self.timeConfig = timeConfig
         if(defaultExamBoard != -2):
             self.defaultExamBoard = defaultExamBoard
-        self.dbm.execute("UPDATE `Users` SET `TimeConfig`=?,`DefaultBoardID`=? WHERE `UserID`=?;", self.timeConfig, (self.defaultExamBoard if self.defaultExamBoard != -1 else None), self.id)
+        self.dbm.execute("UPDATE `Users` SET `TimeConfig`=?, `DefaultBoardID`=? WHERE `UserID`=?;", self.timeConfig, (self.defaultExamBoard if self.defaultExamBoard != -1 else None), self.id)
     
     def delete(self) -> None:
-        """
-        Removes the user from the database.
-        Returns:
-        True if successfully deleted.
-        False if failed to delete.
-        """
-        pass # TODO: Add code to delete from database.
+        """Removes the user from the database."""
+        if(id != -1):
+            self.dbm.execute("DELETE FROM `Users` WHERE UserID=?;", float(self.id))

@@ -204,7 +204,6 @@ class ActiveQuizDialog(object):
         # If the user has finished the quiz and hasn't terminated the quiz elsewhere:
         if(self.currentState == 2):
             # Remove the buttons
-            print("calling unload questionview")
             self.unloadQuestionView()
             # Calculate the average time to answer a question.
             averageAnswerTime = sum(self.timesTakenToAnswer) / len(self.timesTakenToAnswer)
@@ -221,13 +220,11 @@ class ActiveQuizDialog(object):
             while(self.running):
                 time.sleep(0.1)
         # Reload the quiz list in case the best attempt of the quiz has changed.
-        self.parent.reloadQuizList()
+        self.parent.refreshList()
         self.parent.unloadSidePanel()
         self.parent.loadSidePanel()
-        print("everything but the window has been destroyed.")
         # Destroy the window after everything has finished.
         self.window.destroy()
-        print("window destroyed.")
     
     def unloadQuestionView(self) -> None:
         """This method removes all the buttons of the quiz, ready to display the end screen statistics."""
@@ -238,7 +235,6 @@ class ActiveQuizDialog(object):
         self.helpButton.destroy()
         self.pauseButton.destroy()
         self.endQuizButton.destroy()
-        print("buttons should be destroyed.")
     
     def loadFinishedView(self) -> None:
         """This method displays the end of quiz statistics, after the user has finished the quiz."""

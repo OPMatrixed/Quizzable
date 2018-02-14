@@ -195,7 +195,7 @@ class QuizCreatorDialog(object):
         for i in tags.split(","):
             if(i.strip() == ""):
                 continue
-            tagList.append(i.strip())
+            tagList.append(i.strip().lower())
         tags = ",".join(tagList)
         # Validating all the questions.
         questions = []
@@ -259,7 +259,7 @@ class QuizCreatorDialog(object):
             i.quizID = quizID
             i.addToDatabase(self.parent.database)
         # Reload the quiz list on the quiz browser to show the new quiz.
-        self.parent.reloadQuizList()
+        self.parent.refreshList()
         # Exit the window upon successfully creating the quiz.
         self.window.destroy()
     
@@ -452,7 +452,7 @@ class QuizEditorDialog(QuizCreatorDialog):
             i.addToDatabase(self.parent.database)
         
         # Reload the quiz list on the quiz browser to show the new quiz.
-        self.parent.reloadQuizList()
+        self.parent.refreshList()
         # Exit the window upon successfully creating the quiz.
         self.window.destroy()
     

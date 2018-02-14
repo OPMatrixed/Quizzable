@@ -8,6 +8,13 @@ import tkinter.filedialog as tkfile
 import tkinter.messagebox as tkmb
 # Threading module is needed to add a delay to some code, to fix a bug that is documented in the "Developmental Testing" section.
 import threading
+# Difflib is used to compare how alike two strings are, used in the search bar.
+import difflib
+# Collections is used to sort the quizzes based off of their 'scores' based on how similar a quiz is to the search query.
+import collections
+# Time is used to track how long each search/filter takes.
+import time
+import math
 
 # This imports the database file from the same directory as this file.
 import database
@@ -232,6 +239,7 @@ class MainApp(object):
         self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
         # The actual search bar. This will be tied to an event later which updates the search after each letter is typed.
         self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10)
+        self.quizBrowserSearchEntry.bind("<Key>", lambda e: threading.Timer(0.1, self.applyFilters).start())
         self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky=tk.W+tk.E)
         self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky=tk.W+tk.E)
         
@@ -242,13 +250,17 @@ class MainApp(object):
         self.importQuizButton.grid(row = 0, column = 3)
         # The quiz filters, as comboboxes. They default to having the text "Filter by ...", but after selecting another value they can't go back to "Filter by ..."
         # To remove the filter after selecting a value for the filter, the user must select the combobox and select "No filter".
-        self.filterByExamBoardCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"])
-        self.filterBySubjectCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"])
+        self.filterByExamBoardCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.examboardDictionary.values()])
+        self.filterBySubjectCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.subjectDictionary.values()])
         self.filterByDifficultyCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter","1","2","3","4","5",
                                                     "2 and above","3 and above","4 and above","2 and below","3 and below","4 and below"])
         self.filterByExamBoardCombo.set("Filter by exam board")
         self.filterBySubjectCombo.set("Filter by subject")
         self.filterByDifficultyCombo.set("Filter by difficulty")
+        # Binding the comboboxes to update the list when an option in one of the dropdowns is selected.
+        self.filterByExamBoardCombo.bind("<<ComboboxSelected>>", self.applyFilters)
+        self.filterBySubjectCombo.bind("<<ComboboxSelected>>", self.applyFilters)
+        self.filterByDifficultyCombo.bind("<<ComboboxSelected>>", self.applyFilters)
         # Positioning of the filter comboboxes. All fit on the same row.
         self.filterByExamBoardCombo.grid(row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S) # Sticky just makes the element stretch in certain directions.
         self.filterBySubjectCombo.grid(row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S) # tk.N+tk.S means up and down (North and South), tk.W+tk.E means West and East
@@ -271,6 +283,7 @@ class MainApp(object):
         self.quizListLabelSubject.grid(row = 0, column = 1)
         self.quizListLabelExamBoard.grid(row = 0, column = 2)
         self.quizListLabelBestAttempt.grid(row = 0, column = 3)
+        
         # The scroll bar for the lists.
         self.quizListBoxScrollBar = tk.Scrollbar(self.quizListFrame, command = self.scrollbarCommand)
         self.quizListBoxScrollBar.grid(row = 1, column = 4, sticky=tk.N+tk.S)
@@ -298,24 +311,92 @@ class MainApp(object):
         self.quizListBoxExamBoard.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxBestAttempt.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         
-        self.reloadQuizList()
+        self.refreshList()
         
         self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky = tk.W+tk.E+tk.N+tk.S)
         # End of lists frame.
         self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
     
-    def reloadQuizList(self):
-        """This reloads the quiz list, to load all the quizzes on to the quiz browser, and to refresh it if the list changes or a filter/search is applied."""
-        # If the quiz browser hasn't been loaded, don't run this method if it's called.
+    def refreshList(self):
+        self.allQuizzes = [list(i) + [self.database.execute("SELECT * FROM `Results` WHERE `UserID` = ? AND `QuizID` = ? ORDER BY `Score` DESC;", float(self.currentUser.id), float(i[0]))]
+                                for i in self.database.execute("SELECT * FROM `Quizzes`;")]
+        self.applyFilters()
+    
+    def applyFilters(self, e = None):
         if(self.state != MainWindowStates.quizBrowser):
             return
+        
+        startTime = time.clock()
+        
+        searchQuery = self.quizBrowserSearchEntry.get().lower()
+        subjectText = self.filterBySubjectCombo.get()
+        examBoardText = self.filterByExamBoardCombo.get()
+        difficultyText = self.filterByDifficultyCombo.get()
+        
+        quizList = self.allQuizzes[:]
+        if(not subjectText == "Filter by subject" and not subjectText == "No filter"):
+            x = 0
+            allowedSubject = self.inverseSubjectDictionary[subjectText]
+            while x < len(quizList):
+                if(quizList[x][2] != allowedSubject):
+                    del quizList[x]
+                else:
+                    x += 1
+        if(not examBoardText == "Filter by exam board" and not examBoardText == "No filter"):
+            x = 0
+            allowedExamBoard = self.inverseExamboardDictionary[examBoardText]
+            while x < len(quizList):
+                if(quizList[x][3] != allowedExamBoard):
+                    del quizList[x]
+                else:
+                    x += 1
+        if(not difficultyText == "Filter by difficulty" and not difficultyText == "No filter"):
+            if(len(difficultyText) == 1):
+                x = 0
+                allowedDifficulty = int(difficultyText[0])
+                while x < len(quizList):
+                    if(quizList[x][3] != allowedDifficulty):
+                        del quizList[x]
+                    else:
+                        x += 1
+            elif(difficultyText.endswith("above")):
+                x = 0
+                allowedDifficulty = int(difficultyText[0])
+                while x < len(quizList):
+                    if(quizList[x][3] < allowedDifficulty):
+                        del quizList[x]
+                    else:
+                        x += 1
+            else:
+                x = 0
+                allowedDifficulty = int(difficultyText[0])
+                while x < len(quizList):
+                    if(quizList[x][3] > allowedDifficulty):
+                        del quizList[x]
+                    else:
+                        x += 1
+        
+        # Ranking algorithm
+        if(len(searchQuery.strip())):
+            searchWords = searchQuery.split(" ")
+            quizRankings = {}
+            for i in range(len(quizList)):
+                score = 0
+                for k in searchWords:
+                    for j in quizList[i][1].split(" "):
+                        score += 2 * math.pow(difflib.SequenceMatcher(None, k, j).ratio(), 3)
+                        score += j.count(k)
+                    for j in quizList[i][5].split(","):
+                        score += 2 * math.pow(difflib.SequenceMatcher(None, k, j).ratio(), 4)
+                quizRankings[i] = score / (1 + quizList[i][1].count(" ") + quizList[i][5].count(","))
+            counter = collections.Counter(quizRankings)
+        
         # Clear the lists
         self.quizListBoxNames.delete(0, tk.END)
         self.quizListBoxSubject.delete(0, tk.END)
         self.quizListBoxExamBoard.delete(0, tk.END)
         self.quizListBoxBestAttempt.delete(0, tk.END)
-        # This loads all the quiz records from the database, but ignores each quiz's questions.
-        quizQueryResult = self.database.execute("SELECT * FROM `Quizzes`;")
+
         self.quizIDs = []
         self.quizNames = []
         self.quizSubjects = []
@@ -323,25 +404,47 @@ class MainApp(object):
         self.quizQuestionNumbers = []
         self.quizDifficulties = []
         self.quizTags = {}
-        # This goes through each quiz in the database and adds it to these lists which will be used in searching/filtering.
-        for i in quizQueryResult:
-            self.quizIDs.append(i[0])
-            self.quizNames.append(i[1])
-            self.quizSubjects.append(i[2])
-            self.quizExamboards.append(i[3])
-            self.quizQuestionNumbers.append(i[4])
-            self.quizDifficulties.append(i[6])
-            self.quizTags[i[0]] = i[5].split(",") if i[5] else []
-            # This is adds each quiz to each of the lists.
-            self.quizListBoxNames.insert(tk.END, i[1])
-            self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
-            self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
-            bestAttempt = self.database.execute("SELECT * FROM `Results` WHERE `UserID`=? AND `QuizID`=? ORDER BY `Score` DESC;",
-                                    float(self.currentUser.id), float(i[0]))
-            if(bestAttempt and len(bestAttempt)):
-                self.quizListBoxBestAttempt.insert(tk.END, str(round(bestAttempt[0][3] * 100, 1)) + "% - " + str(round(bestAttempt[0][6], 1)) + "s")
-            else:
-                self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
+        
+        if(len(searchQuery.strip())):
+            for j in counter.most_common(200):
+                i = quizList[j[0]]
+                self.quizIDs.append(i[0])
+                self.quizNames.append(i[1])
+                self.quizSubjects.append(i[2])
+                self.quizExamboards.append(i[3])
+                self.quizQuestionNumbers.append(i[4])
+                self.quizDifficulties.append(i[6])
+                self.quizTags[i[0]] = i[5].split(",") if i[5] else []
+                # This is adds each quiz to each of the lists.
+                self.quizListBoxNames.insert(tk.END, i[1])
+                self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
+                self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
+                
+                if(i[7] and len(i[7])):
+                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + str(round(i[7][0][6], 1)) + "s")
+                else:
+                    self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
+        else:
+            # This goes through each quiz in the database and adds it to these lists which will be used in searching/filtering.
+            for j in range(min(200, len(quizList))):
+                i = quizList[j]
+                self.quizIDs.append(i[0])
+                self.quizNames.append(i[1])
+                self.quizSubjects.append(i[2])
+                self.quizExamboards.append(i[3])
+                self.quizQuestionNumbers.append(i[4])
+                self.quizDifficulties.append(i[6])
+                self.quizTags[i[0]] = i[5].split(",") if i[5] else []
+                # This is adds each quiz to each of the lists.
+                self.quizListBoxNames.insert(tk.END, i[1])
+                self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
+                self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
+                if(i[7] and len(i[7])):
+                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + str(round(i[7][0][6], 1)) + "s")
+                else:
+                    self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
+        
+        print("Search and filter took: " + str(round(time.clock() - startTime, 3)) + "s")
     
     def loadSidePanel(self) -> None:
         """
