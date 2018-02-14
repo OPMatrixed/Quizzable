@@ -453,7 +453,7 @@ class MainApp(object):
             n = self.quizListBoxExamBoard.curselection()[0]
         elif(self.quizListBoxBestAttempt.curselection()):
             n = self.quizListBoxBestAttempt.curselection()[0]
-        self.currentlySelectedQuiz = n
+        self.currentlySelectedQuiz = int(n)
         # This changes all the text labels on the right to the details of the currently selected quiz.
         self.quizListSideName.config(text = self.quizNames[self.currentlySelectedQuiz])
         if(self.quizSubjects[self.currentlySelectedQuiz]):

@@ -55,7 +55,7 @@ class ActiveQuizDialog(object):
         if(quiz.subject in parent.subjectDictionary.keys()):
             subjectExamBoard.append(parent.subjectDictionary[quiz.subject])
         if(quiz.examBoard in parent.examboardDictionary.keys()):
-            subjectExamBoard.append(parent.subjectDictionary[quiz.examBoard])
+            subjectExamBoard.append(parent.examboardDictionary[quiz.examBoard])
         self.quizSubjectAndExamBoardLabel = tk.Label(self.window, text =  " - ".join(subjectExamBoard), anchor = tk.NW)
         # Lots of arguments on the next line of code. anchor = tk.W means that all new lines are left-aligned.
         # justify = tk.LEFT means that the whole chunk of text should be left-aligned. Both anchor and justify are needed because they have small differences.
@@ -204,6 +204,7 @@ class ActiveQuizDialog(object):
         # If the user has finished the quiz and hasn't terminated the quiz elsewhere:
         if(self.currentState == 2):
             # Remove the buttons
+            print("calling unload questionview")
             self.unloadQuestionView()
             # Calculate the average time to answer a question.
             averageAnswerTime = sum(self.timesTakenToAnswer) / len(self.timesTakenToAnswer)
@@ -214,7 +215,7 @@ class ActiveQuizDialog(object):
             import datetime
             # Adds the result to the database.
             self.parent.database.execute("INSERT INTO `Results` (UserID, QuizID, Score, DateCompleted, AverageAnswerTime, TotalDuration) VALUES (?, ?, ?, ?, ?, ?);",
-                    self.user.id, self.quiz.id, self.numberOfCorrectAnswers / len(self.quiz.questions), datetime.datetime.now(), averageAnswerTime, self.totalDuration)
+                    float(self.user.id), float(self.quiz.id), self.numberOfCorrectAnswers / len(self.quiz.questions), datetime.datetime.now(), averageAnswerTime, self.totalDuration)
             
             # Keep the window alive before closing it, so the user has time to read the results.
             while(self.running):
@@ -223,8 +224,10 @@ class ActiveQuizDialog(object):
         self.parent.reloadQuizList()
         self.parent.unloadSidePanel()
         self.parent.loadSidePanel()
+        print("everything but the window has been destroyed.")
         # Destroy the window after everything has finished.
         self.window.destroy()
+        print("window destroyed.")
     
     def unloadQuestionView(self) -> None:
         """This method removes all the buttons of the quiz, ready to display the end screen statistics."""
@@ -235,6 +238,7 @@ class ActiveQuizDialog(object):
         self.helpButton.destroy()
         self.pauseButton.destroy()
         self.endQuizButton.destroy()
+        print("buttons should be destroyed.")
     
     def loadFinishedView(self) -> None:
         """This method displays the end of quiz statistics, after the user has finished the quiz."""
@@ -247,4 +251,5 @@ class ActiveQuizDialog(object):
     
     def finish(self) -> None:
         """This destroys the window after all the previous tasks are finished, by setting running to false, so the window closes once the thread has finished its last iteration."""
+        print("running finish method")
         self.running = False

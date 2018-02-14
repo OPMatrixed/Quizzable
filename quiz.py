@@ -94,17 +94,18 @@ class Question(object):
         if(check):
             # If the validation of the question fails, don't save to the database, instead raise an error.
             raise ValueError("Question: " + check)
-        answerAdditionString = ""
-        answerInputQuestionMarks = ""
         if(len(self.otherAnswers) == 3):
-            answerAdditionString = " Answer3, Answer4,"
-            answerInputQuestionMarks = ",?,?"
+            # If there are 4 answers
+            database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Answer3, Answer4, Hint, Help) VALUES (?,?,?,?,?,?,?,?)",
+                self.quizID, self.question, self.correctAnswer, self.otherAnswers[0], self.otherAnswers[1], self.otherAnswers[2], self.hint, self.help)
         elif(len(self.otherAnswers) == 2):
-            answerAdditionString = " Answer3,"
-            answerInputQuestionMarks = ",?"
-        # The "*self.otherAnswers" on the following line goes through each element in the list, and passes each as a separate argument.
-        database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2," + answerAdditionString + " Hint, Help) VALUES (?,?,?,?,?,?" + answerInputQuestionMarks + ")",
-                self.quizID, self.question, self.correctAnswer, *self.otherAnswers, self.hint, self.help)
+            # If there are 3 answers
+            database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Answer3, Hint, Help) VALUES (?,?,?,?,?,?,?)",
+                self.quizID, self.question, self.correctAnswer, self.otherAnswers[0], self.otherAnswers[1], self.hint, self.help)
+        else:
+            # If there are only 2 answers
+            database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Hint, Help) VALUES (?,?,?,?,?,?)",
+                self.quizID, self.question, self.correctAnswer, self.otherAnswers[0], self.hint, self.help)
     
     def getQuestionFromDatabaseRecord(record: tuple) -> 'Question': # This is not called on an object, but the class itself.
         """This will take a record from the database as a tuple and return a Question object from the data it is given."""
@@ -145,12 +146,12 @@ class Quiz(object):
     def getQuiz(id: int, database) -> 'Quiz': # This is not called on an object, but the class itself.
         """This will load a quiz given a quiz ID, and return it as a Quiz object."""
         # Queries the database to find the quiz record which is to be loaded.
-        rows = database.execute("SELECT * FROM `Quizzes` WHERE `QuizID`=?;", id)
+        rows = database.execute("SELECT * FROM `Quizzes` WHERE `QuizID`=?;", float(id))
         # This checks if the 'rows' list is not empty. This uses the property that empty lists in python are treated as false by if and while statements, and non-empty lists are true.
         if(rows):
             # Goes through each field in the record and saves it in a 
             record = rows[0]
-            questionRows = database.execute("SELECT * FROM `Questions` WHERE `QuizID`=?;", id)
+            questionRows = database.execute("SELECT * FROM `Questions` WHERE `QuizID`=?;", float(id))
             questionList = [Question.getQuestionFromDatabaseRecord(i) for i in questionRows] # This turns all the question records to a list of question objects.
             title = record[1]
             subjectID = record[2]
