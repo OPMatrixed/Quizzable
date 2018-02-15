@@ -658,7 +658,7 @@ class MainApp(object):
             # If the user didn't choose a file, usually by closing the window, we take no further action.
             return
         # Imports the quiz if the user has selected a file.
-        q = quiz.Quiz.importQuiz(filename)
+        q = quiz.Quiz.importQuiz(self, filename)
         # TODO: Add imported quiz to quiz browser (if successful).
     
     def userSettings(self) -> None:

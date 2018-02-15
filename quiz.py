@@ -5,6 +5,8 @@ and the Quiz class holds the Question objects and handles saving and loading to 
 as well as importing and exporting quizzes into a non-database format.
 """
 
+import xml.etree.ElementTree as et
+
 class Question(object):
     def __init__(self, quizID: int, question: str, correctAnswer: str, otherAnswers: list, id: int, hint: str, help: str) -> None:
         """This is the Question object creation method, and it expects all arguments listed above."""
@@ -149,7 +151,7 @@ class Quiz(object):
         rows = database.execute("SELECT * FROM `Quizzes` WHERE `QuizID`=?;", float(id))
         # This checks if the 'rows' list is not empty. This uses the property that empty lists in python are treated as false by if and while statements, and non-empty lists are true.
         if(rows):
-            # Goes through each field in the record and saves it in a 
+            # Goes through each field in the record and returns a Quiz object
             record = rows[0]
             questionRows = database.execute("SELECT * FROM `Questions` WHERE `QuizID`=?;", float(id))
             questionList = [Question.getQuestionFromDatabaseRecord(i) for i in questionRows] # This turns all the question records to a list of question objects.
@@ -165,9 +167,43 @@ class Quiz(object):
         else:
             raise IndexError("No quiz found at the given id.")
     
-    def importQuiz(filename: str) -> 'Quiz': # This is not called on an object, but the class itself.
+    def importQuiz(parent, filename: str) -> 'Quiz': # This is not called on an object, but the class itself.
         """
         This will import a quiz from outside the database (i.e. from a file), and load it as a Quiz object.
         This will save it to the database by default.
         """
-        pass # TODO
+        tree = None
+        root = None
+        metadata = None
+        title = None
+        difficulty = None
+        try:
+            tree = et.parse(filename)
+            root = tree.getroot()
+            metadata = root.find("meta")
+            title = metadata.find("title").text
+            difficulty = metadata.find("difficulty").text
+        except AttributeError:
+            return "Invalid XML."
+        subject = metadata.find("subjectName")
+        subjectID = -1
+        if(subject):
+            subject = subject.text
+            for i in parent.inverseSubjectDictionary.keys():
+                if(subject.lower() == i.lower()):
+                    subjectID = parent.inverseSubjectDictionary[i]
+        examBoard = metadata.find("examBoardName")
+        examBoardID = -1
+        if(examBoard):
+            examBoard = examBoard.text
+            for i in parent.inverseExamboardDictionary.keys():
+                if(examBoard.lower() == i.lower()):
+                    examBoardID = parent.inverseExamboardDictionary[i]
+        tags = []
+        tagsElement = metadata.find("tags")
+        if(tagsElement):
+            for i in tagsElement.findall("tag"):
+                if(i and i.text):
+                    tags.append(i.text)
+        # TODO: Load the questions
+        
