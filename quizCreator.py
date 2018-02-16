@@ -443,9 +443,9 @@ class QuizEditorDialog(QuizCreatorDialog):
         
         # Update the quiz record
         self.parent.database.execute("UPDATE `Quizzes` SET QuizName=?, SubjectID=?, ExamboardID=?, AmountOfQuestions=?, TagList=?, Difficulty=? WHERE QuizID=?;",
-                                        title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), self.quiz.id)
+                                        title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), float(self.quiz.id))
         # Remove the old questions
-        self.parent.database.execute("DELETE FROM `Questions` WHERE QuizID=?;", self.quiz.id)
+        self.parent.database.execute("DELETE FROM `Questions` WHERE QuizID=?;", float(self.quiz.id))
         # Add the new questions in
         for i in questions:
             i.quizID = self.quiz.id

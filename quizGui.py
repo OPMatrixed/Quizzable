@@ -120,6 +120,7 @@ class ActiveQuizDialog(object):
         self.totalPausedDuration = 0 # The length of time that the quiz has been paused for.
         self.timesTakenToAnswer = [None for i in range(len(self.quiz.questions))]
         self.totalDuration = None
+        self.startTime = time.clock()
         while self.running:
             if(currentQuestion != questionNumber):
                 # A new question needs to be displayed
@@ -207,7 +208,7 @@ class ActiveQuizDialog(object):
             self.unloadQuestionView()
             # Calculate the average time to answer a question.
             averageAnswerTime = sum(self.timesTakenToAnswer) / len(self.timesTakenToAnswer)
-            self.totalDuration = time.clock() - self.totalPausedDuration
+            self.totalDuration = time.clock() - self.totalPausedDuration - self.startTime
             # Display the user's performance statistics.
             self.loadFinishedView()
             self.running = True

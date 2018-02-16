@@ -99,15 +99,15 @@ class Question(object):
         if(len(self.otherAnswers) == 3):
             # If there are 4 answers
             database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Answer3, Answer4, Hint, Help) VALUES (?,?,?,?,?,?,?,?)",
-                self.quizID, self.question, self.correctAnswer, self.otherAnswers[0], self.otherAnswers[1], self.otherAnswers[2], self.hint, self.help)
+                float(self.quizID), self.question, self.correctAnswer, self.otherAnswers[0], self.otherAnswers[1], self.otherAnswers[2], self.hint, self.help)
         elif(len(self.otherAnswers) == 2):
             # If there are 3 answers
             database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Answer3, Hint, Help) VALUES (?,?,?,?,?,?,?)",
-                self.quizID, self.question, self.correctAnswer, self.otherAnswers[0], self.otherAnswers[1], self.hint, self.help)
+                float(self.quizID), self.question, self.correctAnswer, self.otherAnswers[0], self.otherAnswers[1], self.hint, self.help)
         else:
             # If there are only 2 answers
             database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Hint, Help) VALUES (?,?,?,?,?,?)",
-                self.quizID, self.question, self.correctAnswer, self.otherAnswers[0], self.hint, self.help)
+                float(self.quizID), self.question, self.correctAnswer, self.otherAnswers[0], self.hint, self.help)
     
     def getQuestionFromDatabaseRecord(record: tuple) -> 'Question': # This is not called on an object, but the class itself.
         """This will take a record from the database as a tuple and return a Question object from the data it is given."""
