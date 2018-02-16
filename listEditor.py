@@ -24,7 +24,8 @@ class ListEditor(object):
         self.window.grid_columnconfigure(1, weight = 1)
         self.listFrame = tk.Frame(self.window)
         self.listView = tk.Listbox(self.listFrame)
-        self.scrollBar = tk.Scrollbar(self.listFrame)
+        self.scrollBar = tk.Scrollbar(self.listFrame, command = self.listView.yview)
+        self.listView.config(yscrollcommand = self.scrollBar.set)
         self.listView.grid(row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         self.scrollBar.grid(row = 0, column = 1, sticky = tk.N+tk.S)
         self.listFrame.grid_columnconfigure(0, weight = 1)
@@ -40,8 +41,10 @@ class SubjectEditor(ListEditor):
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Subject List Editor")
-        for i in self.parent.subjectDictionary.values():
+        self.subjectMapping = []
+        for i in self.parent.inverseSubjectDictionary.keys():
             self.listView.insert(tk.END, i)
+            self.subjectMapping.append(self.parent.inverseSubjectDictionary[i])
     
     def add(self):
         name = tksd.askstring("Add new subject", "Name:", parent = self.window).strip()
@@ -58,23 +61,30 @@ class SubjectEditor(ListEditor):
                     tkmb.showerror("Add subject error", "Subject already exists in the list.")
                     return
             self.parent.database.execute("INSERT INTO `Subjects` (SubjectName) VALUES (?);", name)
-            self.listView.insert(tk.END, name)
             # This gets the inserted record's id.
             lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
             id = lastRecord[0][0]
+            
             self.parent.subjectDictionary[id] = name
             self.parent.inverseSubjectDictionary[name] = id
+            
+            self.listView.insert(tk.END, name)
+            self.subjectMapping.append(id)
     
     def remove(self):
-        pass
+        index = self.listView.curselection()
+        if(index and index >= 0 and index < len(self.subjectMapping)):
+            subjectID = self.subjectMapping[index]
 
 class ExamBoardEditor(ListEditor):
     def __init__(self, toplevel: tk.Tk, parent):
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Exam Board List Editor")
+        self.examBoardMapping = []
         for i in self.parent.examboardDictionary.values():
             self.listView.insert(tk.END, i)
+            self.examBoardMapping.append(self.parent.inverseExamboardDictionary[i])
 
     def add(self):
         name = tksd.askstring("Add new exam board", "Name:", parent = self.window).strip()
@@ -89,12 +99,15 @@ class ExamBoardEditor(ListEditor):
                     tkmb.showerror("Add exam board error", "Exam board already exists in the list.")
                     return
             self.parent.database.execute("INSERT INTO `Examboards` (EName) VALUES (?);", name)
-            self.listView.insert(tk.END, name)
             # This gets the inserted record's id.
             lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
             id = lastRecord[0][0]
+            
             self.parent.examboardDictionary[id] = name
             self.parent.inverseExamboardDictionary[name] = id
+            
+            self.listView.insert(tk.END, name)
+            self.examBoardMapping.append(id)
     
     def remove(self):
         pass
