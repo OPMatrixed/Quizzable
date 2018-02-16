@@ -85,6 +85,7 @@ class MainApp(object):
         """
         import userGui
         import statsGui
+        import listEditor
         
         # Creating the menu object.
         self.menuBar = tk.Menu(self.tk)
@@ -99,8 +100,8 @@ class MainApp(object):
         
         # This is the subjects & exam boards drop-down.
         self.subjectsAndExamBoardsMenu = tk.Menu(self.menuBar, tearoff = 0)
-        self.subjectsAndExamBoardsMenu.add_command(label = "Edit Subject List") # TODO
-        self.subjectsAndExamBoardsMenu.add_command(label = "Edit Exam Board List") # TODO
+        self.subjectsAndExamBoardsMenu.add_command(label = "Edit Subject List", command = lambda: listEditor.SubjectEditor(self.tk, self))
+        self.subjectsAndExamBoardsMenu.add_command(label = "Edit Exam Board List", command = lambda: listEditor.ExamBoardEditor(self.tk, self))
         
         # This is the quiz drop-down, and handles creating quizzes and import quizzes.
         self.quizMenu = tk.Menu(self.menuBar, tearoff = 0)
@@ -142,7 +143,7 @@ class MainApp(object):
         self.tk.grid_rowconfigure(6, weight = 2)
         self.tk.grid_rowconfigure(7, weight = 1)
         # Login screen heading text
-        self.loginLabel = tk.Label(self.tk, text="User Selection", font = headerFont)
+        self.loginLabel = tk.Label(self.tk, text = "User Selection", font = headerFont)
         
         userList = []
         # This queries the database to get the usernames of all the users.
@@ -277,7 +278,7 @@ class MainApp(object):
         self.quizListLabelNames = tk.Label(self.quizListFrame, text = "Quiz Name")
         self.quizListLabelSubject = tk.Label(self.quizListFrame, text = "Subject")
         self.quizListLabelExamBoard = tk.Label(self.quizListFrame, text = "Examboard")
-        self.quizListLabelBestAttempt = tk.Label(self.quizListFrame, text = "Last Attempt")
+        self.quizListLabelBestAttempt = tk.Label(self.quizListFrame, text = "Best Attempt")
         # The positions of the column headings, all on the same row.
         self.quizListLabelNames.grid(row = 0, column = 0)
         self.quizListLabelSubject.grid(row = 0, column = 1)
@@ -317,12 +318,12 @@ class MainApp(object):
         # End of lists frame.
         self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
     
-    def refreshList(self):
+    def refreshList(self) -> None:
         self.allQuizzes = [list(i) + [self.database.execute("SELECT * FROM `Results` WHERE `UserID` = ? AND `QuizID` = ? ORDER BY `Score` DESC;", float(self.currentUser.id), float(i[0]))]
                                 for i in self.database.execute("SELECT * FROM `Quizzes`;")]
         self.applyFilters()
     
-    def applyFilters(self, e = None):
+    def applyFilters(self, e = None) -> None:
         if(self.state != MainWindowStates.quizBrowser):
             return
         
@@ -489,7 +490,7 @@ class MainApp(object):
         # Placing the button frame.
         self.quizListSideButtonFrame.grid(row = 3, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
-    def unloadQuizBrowserScreen(self):
+    def unloadQuizBrowserScreen(self) -> None:
         """This removes all the widgets off the quiz browser screen, in case the login screen needs to be displayed, or potentially the quiz browser needs to re-load."""
         # Resetting the grid configuration.
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 0)
@@ -527,7 +528,7 @@ class MainApp(object):
         self.quizBrowserSearchFrame.destroy()
         self.quizListFrame.destroy()
     
-    def unloadSidePanel(self):
+    def unloadSidePanel(self) -> None:
         """This removes all the widgets from the side panel."""
         # Deleting widgets in the side panel
         self.quizListSideName.destroy()
@@ -619,7 +620,7 @@ class MainApp(object):
         # This then launches the window, passing the loaded quiz as an argument.
         quizGui.ActiveQuizDialog(self.tk, self, quiz, self.currentUser)
     
-    def editQuiz(self):
+    def editQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
         import quiz, quizCreator
         # The following if statements check each list to see if an entry from any of the lists has been selected, and sets the number n to the selected row number.
@@ -669,7 +670,7 @@ class MainApp(object):
         else:
             tkmb.showerror("User error", "No user currently selected, can't change user settings.")
     
-    def switchUser(self):
+    def switchUser(self) -> None:
         """This unloads the quiz browser and displays the select user screen again."""
         if(self.state != MainWindowStates.quizBrowser):
             # If the user isn't on the quiz browser, stop executing this subroutine.
