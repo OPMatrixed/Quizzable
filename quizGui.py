@@ -4,6 +4,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
 
+import math as maths
+
 class ActiveQuizDialog(object):
     def __init__(self, toplevel: tk.Tk, parent, quiz: 'Quiz', currentUser: 'User') -> None:
         """
@@ -108,7 +110,6 @@ class ActiveQuizDialog(object):
     def quizThread(self):
         """This subroutine is run in a separate thread, and it will manage the quiz window while the user is doing the quiz."""
         import time # Used to keep track of times
-        import math # Used for the rounding functions, as time can be shown to too many unnecessary decimal places.
         questionNumber = 0 # The question number of the quiz that should be displayed on the next iteration.
         currentQuestion = -1 # The current question number that is currently being displayed.
         currentQuestionStartTime = 0 # The time that the current question was initially displayed, stored as the time since the thread started, in seconds.
@@ -196,7 +197,7 @@ class ActiveQuizDialog(object):
                         answerTime = time.clock() + 5
                     else:
                         # If the user still has time left, display the remaining time in seconds, rounded up to the nearest integer.
-                        self.timeLimitLabel.config(text = str(math.ceil(timeRemaining)), fg = "black")
+                        self.timeLimitLabel.config(text = str(maths.ceil(timeRemaining)), fg = "black")
                 elif(self.currentState == 1 and answerTime <= time.clock()):
                     # If the delay after answering a question is over, show the next question.
                     questionNumber += 1
@@ -239,10 +240,9 @@ class ActiveQuizDialog(object):
     
     def loadFinishedView(self) -> None:
         """This method displays the end of quiz statistics, after the user has finished the quiz."""
-        import math
         self.questionLabel.config(text = "Quiz Completed!")
         self.scoreLabel = tk.Label(self.window, text = "Score: " + str(self.numberOfCorrectAnswers) + "/" + str(len(self.quiz.questions)), font = self.questionFont)
-        self.timeLabel = tk.Label(self.window, text = "Time taken: " + str(math.ceil(self.totalDuration * 10) / 10) + " seconds", font = self.questionFont)
+        self.timeLabel = tk.Label(self.window, text = "Time taken: " + str(maths.ceil(self.totalDuration * 10) / 10) + " seconds", font = self.questionFont)
         self.scoreLabel.grid(row = 3, column = 0)
         self.timeLabel.grid(row = 4, column = 0)
     

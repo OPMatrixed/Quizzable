@@ -14,7 +14,7 @@ import difflib
 import collections
 # Time is used to track how long each search/filter takes.
 import time
-import math
+import math as maths # This is absolutely required.
 
 # This imports the database file from the same directory as this file.
 import database
@@ -385,10 +385,10 @@ class MainApp(object):
                 score = 0
                 for k in searchWords:
                     for j in quizList[i][1].split(" "):
-                        score += 2 * math.pow(difflib.SequenceMatcher(None, k, j).ratio(), 3)
+                        score += 2 * maths.pow(difflib.SequenceMatcher(None, k, j).ratio(), 3)
                         score += j.count(k)
                     for j in quizList[i][5].split(","):
-                        score += 2 * math.pow(difflib.SequenceMatcher(None, k, j).ratio(), 4)
+                        score += 2 * maths.pow(difflib.SequenceMatcher(None, k, j).ratio(), 4)
                 quizRankings[i] = score / (1 + quizList[i][1].count(" ") + quizList[i][5].count(","))
             counter = collections.Counter(quizRankings)
         
