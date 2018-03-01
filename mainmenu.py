@@ -28,7 +28,7 @@ class MainWindowStates:
     login = 1
     quizBrowser = 2
 
-class MainApp(object):
+class MainMenu(object):
     appName = "Quizzable"
     appVersion = "Alpha v0.6"
     def __init__(self, tkobj: tk.Tk) -> None:
@@ -42,8 +42,8 @@ class MainApp(object):
         self.tk.geometry("800x600")
         # This sets the minimum dimensions of the window, 700 pixels wide by 350 pixels high.
         self.tk.minsize(width = 700, height = 350)
-        # This sets the title of the application
-        self.tk.title("Home - " + MainApp.appName + " - " + MainApp.appVersion)
+        # This sets the title of the application.
+        self.tk.title("Home - " + MainMenu.appName + " - " + MainMenu.appVersion)
         # Makes the program destroy the window when the X button in the top right is pressed.
         self.tk.protocol("WM_DELETE_WINDOW", self.endApplication)
         # This sets the state of the application, to keep track of what's on the main window.
@@ -236,13 +236,13 @@ class MainApp(object):
         self.quizBrowserSearchFrame.grid_columnconfigure(1, weight = 4)
         self.quizBrowserSearchFrame.grid_rowconfigure(0, weight = 1)
         # The search text preceding the text entry box.
-        self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text="Search:")
+        self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text = "Search:")
         self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
         # The actual search bar. This will be tied to an event later which updates the search after each letter is typed.
         self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10)
         self.quizBrowserSearchEntry.bind("<Key>", lambda e: threading.Timer(0.1, self.applyFilters).start())
-        self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky=tk.W+tk.E)
-        self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky=tk.W+tk.E)
+        self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky = tk.W+tk.E)
+        self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W+tk.E)
         
         # Create a Quiz and Import a Quiz Buttons
         self.createQuizButton = tk.Button(self.tk, text = "Create a Quiz", command = self.createQuizButtonCommand)
@@ -253,8 +253,8 @@ class MainApp(object):
         # To remove the filter after selecting a value for the filter, the user must select the combobox and select "No filter".
         self.filterByExamBoardCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.examboardDictionary.values()])
         self.filterBySubjectCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.subjectDictionary.values()])
-        self.filterByDifficultyCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter","1","2","3","4","5",
-                                                    "2 and above","3 and above","4 and above","2 and below","3 and below","4 and below"])
+        self.filterByDifficultyCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter", "1", "2", "3", "4", "5",
+                                                    "2 and above", "3 and above", "4 and above", "2 and below", "3 and below", "4 and below"])
         self.filterByExamBoardCombo.set("Filter by exam board")
         self.filterBySubjectCombo.set("Filter by subject")
         self.filterByDifficultyCombo.set("Filter by difficulty")
@@ -263,9 +263,9 @@ class MainApp(object):
         self.filterBySubjectCombo.bind("<<ComboboxSelected>>", self.applyFilters)
         self.filterByDifficultyCombo.bind("<<ComboboxSelected>>", self.applyFilters)
         # Positioning of the filter comboboxes. All fit on the same row.
-        self.filterByExamBoardCombo.grid(row = 1, column = 0, sticky=tk.W+tk.E+tk.N+tk.S) # Sticky just makes the element stretch in certain directions.
-        self.filterBySubjectCombo.grid(row = 1, column = 1, sticky=tk.W+tk.E+tk.N+tk.S) # tk.N+tk.S means up and down (North and South), tk.W+tk.E means West and East
-        self.filterByDifficultyCombo.grid(row = 1, column = 2, sticky=tk.W+tk.E+tk.N+tk.S) # Adding the directions up makes it expand in all the directions you specify.
+        self.filterByExamBoardCombo.grid(row = 1, column = 0, sticky = tk.W+tk.E+tk.N+tk.S) # Sticky just makes the element stretch in certain directions.
+        self.filterBySubjectCombo.grid(row = 1, column = 1, sticky = tk.W+tk.E+tk.N+tk.S) # tk.N+tk.S means up and down (North and South), tk.W+tk.E means West and East
+        self.filterByDifficultyCombo.grid(row = 1, column = 2, sticky = tk.W+tk.E+tk.N+tk.S) # Adding the directions up makes it expand in all the directions you specify.
         # Start of frame box that contains the lists.
         self.quizListFrame = tk.Frame(self.tk)
         # The frame's grid configuration.
@@ -287,7 +287,7 @@ class MainApp(object):
         
         # The scroll bar for the lists.
         self.quizListBoxScrollBar = tk.Scrollbar(self.quizListFrame, command = self.scrollbarCommand)
-        self.quizListBoxScrollBar.grid(row = 1, column = 4, sticky=tk.N+tk.S)
+        self.quizListBoxScrollBar.grid(row = 1, column = 4, sticky = tk.N+tk.S)
         # The main Quizzes List is split up into four synchronised lists, due to the nature of the listbox in tkinter.
         # The Quiz Name goes in the first (biggest) column.
         self.quizListBoxNames = tk.Listbox(self.quizListFrame, yscrollcommand = self.scrollOnList)
@@ -324,6 +324,7 @@ class MainApp(object):
         self.applyFilters()
     
     def applyFilters(self, e = None) -> None:
+        # TODO: Add more comments
         if(self.state != MainWindowStates.quizBrowser):
             return
         
@@ -693,7 +694,7 @@ def startGUI() -> None:
     # Creates the window
     master = tk.Tk()
     # This loads the MainApp class and loads all the graphical elements.
-    app = MainApp(master)
+    app = MainMenu(master)
     print("Finished building GUI.")
     # The following try-except blocks are to catch any errors during runtime so the program can continue running to close the database connection correctly.
     # This is to try and prevent corrupting the database or failing to save any data that should have been saved during a session of application use.

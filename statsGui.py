@@ -22,6 +22,8 @@ class StatisticsDialog(object):
         self.window.minsize(width = 600, height = 400)
         # Setting the title of the window.
         self.window.title("Statistics - Quizzable")
+        # The current state of the window. Stats = 0, Charts = 1
+        self.currentState = 0
         self.loadMainStats()
     
     def loadMainStats(self) -> None:
@@ -137,7 +139,7 @@ class StatisticsDialog(object):
         # The positioning of the elements.
         self.chartsHeaderText.grid(row = 0, column = 0)
         self.chartCanas.grid(row = 1, column = 0)
-        self.miscStasLabel.grid(row = 0, column = 1, rowspan = 2)
+        self.miscStatsLabel.grid(row = 0, column = 1, rowspan = 2)
     
     def unloadCharts(self) -> None:
         # This unloads the charts and goes back to the main statistics view.
@@ -146,4 +148,7 @@ class StatisticsDialog(object):
     def redoQuiz(self) -> None:
         # This is called when the user clicks the "Redo Quiz" button.
         # It will open the quiz window with the currently selected quiz on this window.
+        pass
+    
+    def renderCharts(self) -> None:
         pass

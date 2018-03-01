@@ -5,11 +5,12 @@ and the Quiz class holds the Question objects and handles saving and loading to 
 as well as importing and exporting quizzes into a non-database format.
 """
 
+# This is used to parse the XML quiz files.
 import xml.etree.ElementTree as et
 
 class Question(object):
     def __init__(self, quizID: int, question: str, correctAnswer: str, otherAnswers: list, id: int, hint: str, help: str) -> None:
-        """This is the Question object creation method, and it expects all arguments listed above."""
+        """This is the Question constructor, and it expects all arguments listed above."""
         self.quizID = quizID
         self.question = question
         self.correctAnswer = correctAnswer
@@ -108,6 +109,9 @@ class Question(object):
             # If there are only 2 answers
             database.execute("INSERT INTO Questions (QuizID, Question, CorrectAnswer, Answer2, Hint, Help) VALUES (?,?,?,?,?,?)",
                 float(self.quizID), self.question, self.correctAnswer, self.otherAnswers[0], self.hint, self.help)
+        # Gets the last changed record from the database and gets its ID.
+        lastRecord = database.execute("SELECT @@IDENTITY;")
+        self.id = lastRecord[0][0]
     
     def getQuestionFromDatabaseRecord(record: tuple) -> 'Question': # This is not called on an object, but the class itself.
         """This will take a record from the database as a tuple and return a Question object from the data it is given."""
@@ -125,7 +129,7 @@ class Question(object):
 class Quiz(object):
     def __init__(self, databaseManager, id: int, name: str, tags: list, subject: int, examBoard: int, difficulty: int, questions: list = []) -> None:
         """
-        Quiz object creation method, all parameters except the questions are required,
+        Quiz object constructor, all parameters except the questions are required,
         questions can be added later through the preferred addQuestion method.
         """
         self.dbm = databaseManager
@@ -138,7 +142,7 @@ class Quiz(object):
         self.questions = questions
     
     def exportQuiz(self, filename: str) -> None:
-        """This will export the quiz into a non-database format, probably XML, YAML or using pickle."""
+        """This will export the quiz into an XML file."""
         pass # TODO
     
     # Methods below are not executed on an object, but the Quiz class itself.
@@ -169,8 +173,8 @@ class Quiz(object):
     
     def importQuiz(parent, filename: str) -> 'Quiz': # This is not called on an object, but the class itself.
         """
-        This will import a quiz from outside the database (i.e. from a file), and load it as a Quiz object.
-        This will save it to the database by default.
+        This will import a quiz from an XML file and load it as a Quiz object.
+        It will save it to the database by default.
         """
         tree = None
         root = None
@@ -205,5 +209,16 @@ class Quiz(object):
             for i in tagsElement.findall("tag"):
                 if(i and i.text):
                     tags.append(i.text)
-        # TODO: Load the questions
-        
+        questions = root.findall("question")
+        for i in questions:
+            try:
+                qtext = i.find("qtext").text
+                correctAnswer = i.find("correctanswer").text
+                wrongAnswers = [j.text for j in i.findall("wronganswer")]
+            except AttributeError:
+                return "Invalid question XML."
+            hintElement = i.find("hint")
+            helpElement = i.find("help")
+            hint = hintElement.text if hintElement else None
+            help = helpElement.text if helpElement else None
+            

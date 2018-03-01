@@ -9,8 +9,6 @@ import re
 
 import user
 
-usernameRegex = re.compile('[^a-zA-Z0-9\-_ ]')
-
 class UserCreateDialog(object):
     def __init__(self, toplevel: tk.Tk, parent) -> None:
         """
@@ -86,7 +84,7 @@ class UserCreateDialog(object):
         self.completeButton = tk.Button(self.window, text = "Create User", command = self.finish)
         self.completeButton.grid(row = 4, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
-    def changeTimeSetting(self, setting):
+    def changeTimeSetting(self, setting: int) -> None:
         self.timeSetting = setting
         if(setting == 0):
             self.timerSettingsLabel.config(text = "Timer setting: No timer")
@@ -113,7 +111,7 @@ class UserCreateDialog(object):
             tkmb.showerror("Username error", "Username is too long, it should be between 3 and 20 characters inclusive.", parent = self.window)
             return
         # This removes invalid characters with the regular expression defined at the top of this file.
-        reducedUsername = usernameRegex.sub("", username)
+        reducedUsername = re.compile('[^a-zA-Z0-9\-_ ]').sub("", username)
         if(reducedUsername != username):
             # Username has invalid characters, display an error message.
             tkmb.showerror("Username error", "Username contains invalid characters, it should only contain english letters, numbers, spaces, underscores and dashes.", parent = self.window)

@@ -248,5 +248,4 @@ class ActiveQuizDialog(object):
     
     def finish(self) -> None:
         """This destroys the window after all the previous tasks are finished, by setting running to false, so the window closes once the thread has finished its last iteration."""
-        print("running finish method")
         self.running = False

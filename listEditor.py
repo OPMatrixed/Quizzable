@@ -73,8 +73,9 @@ class SubjectEditor(ListEditor):
     
     def remove(self):
         index = self.listView.curselection()
-        if(index and index >= 0 and index < len(self.subjectMapping)):
-            subjectID = self.subjectMapping[index]
+        if(not(index and index >= 0 and index < len(self.subjectMapping))):
+            return
+        subjectID = self.subjectMapping[index]
 
 class ExamBoardEditor(ListEditor):
     def __init__(self, toplevel: tk.Tk, parent):
