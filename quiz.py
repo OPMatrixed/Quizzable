@@ -175,7 +175,7 @@ class Quiz(object):
         """
         This will import a quiz from an XML file and load it as a Quiz object.
         It will save it to the database by default.
-        """
+        """ # TODO: Run all validation checks
         tree = None
         root = None
         metadata = None
@@ -191,25 +191,48 @@ class Quiz(object):
             return "Invalid XML."
         subject = metadata.find("subjectName")
         subjectID = -1
-        if(subject):
+        if(subject != None):
             subject = subject.text
+            found = False
             for i in parent.inverseSubjectDictionary.keys():
                 if(subject.lower() == i.lower()):
                     subjectID = parent.inverseSubjectDictionary[i]
+                    found = True
+                    break
+            if(not found):
+                parent.database.execute("INSERT INTO `Subjects` (SubjectName) VALUES (?);", subject)
+                # This gets the inserted record's id.
+                subjectID = parent.database.execute("SELECT @@IDENTITY;")[0][0]
+                parent.subjectDictionary[subjectID] = subject
+                parent.inverseSubjectDictionary[subject] = subjectID
+                print("Subject: " + subject + " added.")
+        
         examBoard = metadata.find("examBoardName")
         examBoardID = -1
-        if(examBoard):
+        if(examBoard != None):
             examBoard = examBoard.text
+            found = False
             for i in parent.inverseExamboardDictionary.keys():
                 if(examBoard.lower() == i.lower()):
                     examBoardID = parent.inverseExamboardDictionary[i]
+                    found = True
+                    break
+            if(not found):
+                parent.database.execute("INSERT INTO `Examboards` (EName) VALUES (?);", examBoard)
+                # This gets the inserted record's id.
+                examBoardID = parent.database.execute("SELECT @@IDENTITY;")[0][0]
+                parent.examboardDictionary[examBoardID] = examBoard
+                parent.inverseExamboardDictionary[examBoard] = examBoardID
+                print("Exam board: " + examBoard + " added.")
+        
         tags = []
         tagsElement = metadata.find("tags")
-        if(tagsElement):
+        if(tagsElement != None):
             for i in tagsElement.findall("tag"):
-                if(i and i.text):
+                if(i != None and i.text):
                     tags.append(i.text)
         questions = root.findall("question")
+        questionList = []
         for i in questions:
             try:
                 qtext = i.find("qtext").text
@@ -219,6 +242,15 @@ class Quiz(object):
                 return "Invalid question XML."
             hintElement = i.find("hint")
             helpElement = i.find("help")
-            hint = hintElement.text if hintElement else None
-            help = helpElement.text if helpElement else None
-            
+            hint = hintElement.text if hintElement != None else ""
+            help = helpElement.text if helpElement != None else ""
+            question = Question(-1, qtext, correctAnswer, wrongAnswers, -1, hint, help)
+            if(question.validate()):
+                print(qtext + " : " + question.validate())
+                return
+            questionList.append(question)
+        quizObject = Quiz(parent.database, -1, title, tags, subjectID, examBoardID, difficulty, questionList)
+        print(title, tags, subjectID, examBoardID, difficulty)
+        for i in questionList:
+            print(i.question, i.correctAnswer, i.otherAnswers, i.hint, i.help)
+        parent.refreshList()

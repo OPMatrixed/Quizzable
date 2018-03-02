@@ -33,7 +33,7 @@ class MainMenu(object):
     appVersion = "Alpha v0.6"
     def __init__(self, tkobj: tk.Tk) -> None:
         """
-        This method is called when MainApp is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
+        This method is called when MainMenu is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
         Arguments:
         tkobj is the window object
         """
@@ -218,7 +218,7 @@ class MainMenu(object):
         """
         self.state = MainWindowStates.quizBrowser
         # Configuring the window and the window grid. This grid has 4 rows and 4 columns.
-        self.tk.title("Quiz Browser - " + MainApp.appName + " - " + MainApp.appVersion)
+        self.tk.title("Quiz Browser - " + MainMenu.appName + " - " + MainMenu.appVersion)
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 40)
         self.tk.grid_rowconfigure(1, weight = 0, minsize = 40)
         self.tk.grid_rowconfigure(2, weight = 1)

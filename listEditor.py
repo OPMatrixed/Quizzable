@@ -37,7 +37,7 @@ class ListEditor(object):
         self.removeButton.grid(row = 1, column = 1)
 
 class SubjectEditor(ListEditor):
-    def __init__(self, toplevel: tk.Tk, parent):
+    def __init__(self, toplevel: tk.Tk, parent) -> None:
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Subject List Editor")
@@ -46,7 +46,7 @@ class SubjectEditor(ListEditor):
             self.listView.insert(tk.END, i)
             self.subjectMapping.append(self.parent.inverseSubjectDictionary[i])
     
-    def add(self):
+    def add(self) -> None:
         name = tksd.askstring("Add new subject", "Name:", parent = self.window).strip()
         if(name and len(name)):
             if(len(name) < 2):
@@ -71,14 +71,14 @@ class SubjectEditor(ListEditor):
             self.listView.insert(tk.END, name)
             self.subjectMapping.append(id)
     
-    def remove(self):
+    def remove(self) -> None:
         index = self.listView.curselection()
         if(not(index and index >= 0 and index < len(self.subjectMapping))):
             return
         subjectID = self.subjectMapping[index]
 
 class ExamBoardEditor(ListEditor):
-    def __init__(self, toplevel: tk.Tk, parent):
+    def __init__(self, toplevel: tk.Tk, parent) -> None:
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Exam Board List Editor")
@@ -87,7 +87,7 @@ class ExamBoardEditor(ListEditor):
             self.listView.insert(tk.END, i)
             self.examBoardMapping.append(self.parent.inverseExamboardDictionary[i])
 
-    def add(self):
+    def add(self) -> None:
         name = tksd.askstring("Add new exam board", "Name:", parent = self.window).strip()
         if(name and len(name)):
             if(len(name) < 2):
@@ -110,5 +110,5 @@ class ExamBoardEditor(ListEditor):
             self.listView.insert(tk.END, name)
             self.examBoardMapping.append(id)
     
-    def remove(self):
+    def remove(self) -> None:
         pass

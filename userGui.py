@@ -191,7 +191,10 @@ class UserSettingsDialog(object):
             examBoardList += [i[1] for i in examBoardQueryResults]
         # To set the user's current exam board as the default value in the field, this code must run
         self.currentExamBoard = tk.StringVar()
-        self.currentExamBoard.set(self.parent.examboardDictionary[self.parent.currentUser.defaultExamBoard])
+        if(self.parent.currentUser.defaultExamBoard != -1):
+            self.currentExamBoard.set(self.parent.examboardDictionary[self.parent.currentUser.defaultExamBoard])
+        else:
+            self.currentExamBoard.set("No preference")
         
         # The actual entry fields for the user settings.
         # Exam board entry is a combobox. It gets the options from the exam boards table in the database.
