@@ -84,8 +84,11 @@ class UserCreateDialog(object):
         self.completeButton = tk.Button(self.window, text = "Create User", command = self.finish)
         self.completeButton.grid(row = 4, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
-    def changeTimeSetting(self, setting: int) -> None:
+    def changeTimeSetting(self, setting):
+        # Sets the object's timeSetting to the value passed as a parameter.
         self.timeSetting = setting
+        # This if statement changes the timer setting text depending on what the timer
+        # setting has been changed to.
         if(setting == 0):
             self.timerSettingsLabel.config(text = "Timer setting: No timer")
         elif(setting == 1):
@@ -216,7 +219,10 @@ class UserSettingsDialog(object):
         self.changeTimeSetting(self.parent.currentUser.timeConfig)
     
     def changeTimeSetting(self, setting):
+        # Sets the object's timeSetting to the value passed as a parameter.
         self.timeSetting = setting
+        # This if statement changes the timer setting text depending on what the timer
+        # setting has been changed to.
         if(setting == 0):
             self.timerSettingsLabel.config(text = "Timer setting: No timer")
         elif(setting == 1):

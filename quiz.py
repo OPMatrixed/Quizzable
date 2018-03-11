@@ -7,6 +7,10 @@ as well as importing and exporting quizzes into a non-database format.
 
 # This is used to parse the XML quiz files.
 import xml.etree.ElementTree as et
+# Regular expressions are used for validating quizzes being imported.
+import re
+# For showing import/export messages
+import tkinter.messagebox as tkmb
 
 class Question(object):
     def __init__(self, quizID: int, question: str, correctAnswer: str, otherAnswers: list, id: int, hint: str, help: str) -> None:
@@ -229,8 +233,8 @@ class Quiz(object):
         tagsElement = metadata.find("tags")
         if(tagsElement != None):
             for i in tagsElement.findall("tag"):
-                if(i != None and i.text):
-                    tags.append(i.text)
+                if(i != None and i.text.strip()):
+                    tags.append(i.text.strip())
         questions = root.findall("question")
         questionList = []
         for i in questions:
@@ -246,11 +250,43 @@ class Quiz(object):
             help = helpElement.text if helpElement != None else ""
             question = Question(-1, qtext, correctAnswer, wrongAnswers, -1, hint, help)
             if(question.validate()):
-                print(qtext + " : " + question.validate())
+                tkmb.showerror("Question error", "Question \"" + qtext + "\": " + question.validate(), parent = parent.window)
                 return
             questionList.append(question)
-        quizObject = Quiz(parent.database, -1, title, tags, subjectID, examBoardID, difficulty, questionList)
-        print(title, tags, subjectID, examBoardID, difficulty)
+        
+        # VALIDATION
+        if(len(title) < 3):
+            tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = parent.window)
+            return
+        if(len(title) > 70):
+            tkmb.showerror("Title error", "Quiz title is too long, it should be at most 70 characters long (currently: " + str(len(title)) + ").", parent = parent.window)
+            return
+        # Regular expression to check if the title has any invalid characters.
+        quizTitleRegex = re.compile('[^a-zA-Z0-9\.\-\? ]')
+        reducedTitle = quizTitleRegex.sub("", title)
+        if(reducedTitle != title):
+            tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = parent.window)
+            return
+        # Presence check on difficulty drop-down entry box.
+        if(not difficulty):
+            tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = parent.window)
+            return
+        # Length check on tag entry.
+        if(len(",".join(tags)) > 150):
+            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = parent.window)
+            return
+
+        
+        # Adding the quiz to the database, if all checks have passed.
+        parent.database.execute("INSERT INTO `Quizzes` (QuizName, SubjectID, ExamboardID, AmountOfQuestions, TagList, Difficulty)" +
+                                        "VALUES (?,?,?,?,?,?);", title, float(subjectID) if subjectID != -1 else None, float(examBoardID) if examBoardID != -1 else None, float(len(questions)), ",".join(tags), float(difficulty))
+        
+        # Getting the ID of the record that was just added.
+        lastRecord = parent.database.execute("SELECT @@IDENTITY;")
+        quizID = lastRecord[0][0]
         for i in questionList:
-            print(i.question, i.correctAnswer, i.otherAnswers, i.hint, i.help)
+            # For each question, give it the Quiz's ID, and then add it to the database.
+            i.quizID = quizID
+            i.addToDatabase(parent.database)
+        tkmb.showinfo("Quiz import", "Quiz \"" + title + "\" has been successfully imported.", parent = parent.window)
         parent.refreshList()
