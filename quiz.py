@@ -145,9 +145,42 @@ class Quiz(object):
         self.examBoard = examBoard
         self.questions = questions
     
-    def exportQuiz(self, filename: str) -> None:
+    def exportQuiz(self, parent, filename: str) -> None:
         """This will export the quiz into an XML file."""
-        pass # TODO
+        root = et.Element("quiz")
+        meta = et.SubElement(root, "meta")
+        et.SubElement(meta, "title").text = self.name
+        if(self.subject and self.subject != -1):
+            et.SubElement(meta, "subjectName").text = parent.subjectDictionary[self.subject]
+        if(self.examBoard and self.examBoard != -1):
+            et.SubElement(meta, "examBoardName").text = parent.examboardDictionary[self.examBoard]
+        et.SubElement(meta, "difficulty").text = str(self.difficulty)
+        for i in self.questions:
+            question = et.SubElement(root, "question")
+            et.SubElement(question, "qtext").text = i.question
+            et.SubElement(question, "correctanswer").text = i.correctAnswer
+            for j in i.otherAnswers:
+                et.SubElement(question, "wronganswer").text = j
+            et.SubElement(question, "hint").text = i.hint
+            et.SubElement(question, "help").text = i.help
+        def prettify(element, indent = "    "):
+            queue = [(0, element)]  # (level, element)
+            while queue:
+                level, element = queue.pop(0)
+                children = [(level + 1, child) for child in list(element)]
+                if children:
+                    element.text = "\n" + indent * (level + 1)  # for child open
+                if queue:
+                    element.tail = "\n" + indent * queue[0][0]  # for sibling open
+                else:
+                    element.tail = "\n" + indent * (level - 1)  # for parent close
+                queue[0:0] = children  # prepend so children come before siblings
+        prettify(root)
+        print(str(et.tostring(root))[2:-1].replace("\\n", "\n"))
+        file = open(filename, "w")
+        file.write(str(et.tostring(root))[2:-1].replace("\\n", "\n"))
+        file.close()
+        tkmb.showinfo("Export Quiz", "Quiz successfully exported to XML, saved to: " + filename)
     
     # Methods below are not executed on an object, but the Quiz class itself.
     # i.e. to use these methods you wouldn't need a Quiz object ( q = Quiz(args here); q.getQuiz(other args here) - this is wrong)
@@ -246,36 +279,35 @@ class Quiz(object):
                 return "Invalid question XML."
             hintElement = i.find("hint")
             helpElement = i.find("help")
-            hint = hintElement.text if hintElement != None else ""
-            help = helpElement.text if helpElement != None else ""
+            hint = hintElement.text if hintElement != None and hintElement.text else ""
+            help = helpElement.text if helpElement != None and helpElement.text else ""
             question = Question(-1, qtext, correctAnswer, wrongAnswers, -1, hint, help)
             if(question.validate()):
-                tkmb.showerror("Question error", "Question \"" + qtext + "\": " + question.validate(), parent = parent.window)
+                tkmb.showerror("Question error", "Question \"" + qtext + "\": " + question.validate(), parent = parent.tk)
                 return
             questionList.append(question)
         
         # VALIDATION
         if(len(title) < 3):
-            tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = parent.window)
+            tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = parent.tk)
             return
         if(len(title) > 70):
-            tkmb.showerror("Title error", "Quiz title is too long, it should be at most 70 characters long (currently: " + str(len(title)) + ").", parent = parent.window)
+            tkmb.showerror("Title error", "Quiz title is too long, it should be at most 70 characters long (currently: " + str(len(title)) + ").", parent = parent.tk)
             return
         # Regular expression to check if the title has any invalid characters.
         quizTitleRegex = re.compile('[^a-zA-Z0-9\.\-\? ]')
         reducedTitle = quizTitleRegex.sub("", title)
         if(reducedTitle != title):
-            tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = parent.window)
+            tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = parent.tk)
             return
         # Presence check on difficulty drop-down entry box.
         if(not difficulty):
-            tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = parent.window)
+            tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = parent.tk)
             return
         # Length check on tag entry.
         if(len(",".join(tags)) > 150):
-            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = parent.window)
+            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = parent.tk)
             return
-
         
         # Adding the quiz to the database, if all checks have passed.
         parent.database.execute("INSERT INTO `Quizzes` (QuizName, SubjectID, ExamboardID, AmountOfQuestions, TagList, Difficulty)" +
@@ -288,5 +320,5 @@ class Quiz(object):
             # For each question, give it the Quiz's ID, and then add it to the database.
             i.quizID = quizID
             i.addToDatabase(parent.database)
-        tkmb.showinfo("Quiz import", "Quiz \"" + title + "\" has been successfully imported.", parent = parent.window)
+        tkmb.showinfo("Quiz import", "Quiz \"" + title + "\" has been successfully imported.", parent = parent.tk)
         parent.refreshList()

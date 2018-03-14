@@ -481,8 +481,8 @@ class MainMenu(object):
         # The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
         self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz, state = tk.DISABLED)
         self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8, command = self.editQuiz, state = tk.DISABLED)
-        self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8, state = tk.DISABLED)
-        self.quizListSideDeleteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8, state = tk.DISABLED)
+        self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8, command = self.exportQuizButtonCommand, state = tk.DISABLED)
+        self.quizListSideDeleteQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Delete Quiz", padx = 18, pady = 8, command = self.deleteQuizButtonCommand, state = tk.DISABLED)
         # The positioning for the buttons above.
         self.quizListSideLaunchQuizButton.grid(row = 0, column = 0)
         self.quizListSideEditQuizButton.grid(row = 1, column = 0)
@@ -624,7 +624,6 @@ class MainMenu(object):
     def editQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
         import quiz, quizCreator
-        # The following if statements check each list to see if an entry from any of the lists has been selected, and sets the number n to the selected row number.
         if(self.currentlySelectedQuiz == None):
             # An error message is shown if there are no rows selected, and this method returns so it doesn't try to load a quiz with id of negative one.
             # However, the button should be disabled if there is no quiz selected, so this is just a fallback.
@@ -660,8 +659,54 @@ class MainMenu(object):
             # If the user didn't choose a file, usually by closing the window, we take no further action.
             return
         # Imports the quiz if the user has selected a file.
-        q = quiz.Quiz.importQuiz(self, filename)
-        # TODO: Add imported quiz to quiz browser (if successful).
+        quiz.Quiz.importQuiz(self, filename)
+    
+    def exportQuizButtonCommand(self):
+        """This function is tied to the export quiz button."""
+        import quiz
+        if(self.currentlySelectedQuiz == None):
+            # An error message is shown if there are no rows selected, and this method returns so it doesn't try to export a quiz with id of negative one.
+            # However, the button should be disabled if there is no quiz selected, so this is just a fallback.
+            tkmb.showerror("Export quiz error", "No quiz selected to export, please select a quiz by clicking on one from the list.")
+            return
+        
+        print("Exporting quiz: " + self.quizNames[self.currentlySelectedQuiz]) # A debugging line, to check if the correct quiz is being exported.
+        # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
+        try:
+            quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
+            # This then launches the window, passing the loaded quiz as an argument.
+            # This launches your OS's file explorer, and lets you select a file that ends with ".xml".
+            filename = tkfile.asksaveasfilename(filetypes = ["\"Quiz File\" .xml"], parent = self.tk, title = "Export Quiz")
+            print(filename) # Line useful for debugging
+            if(filename == None or filename == ""):
+                # If the user didn't choose a file, usually by closing the window, we take no further action.
+                return
+            # Exports the quiz if the user has selected a save location.
+            quiz.exportQuiz(self, filename)
+        except IndexError:
+            # If the quiz isn't found in the database.
+            tkmb.showerror("Error", "The selected quiz wasn't found in the database.", parent = self.tk)
+            """
+        except Exception:
+            # If another error occurs.
+            tkmb.showerror("Error", "The selected quiz is invalid or corrupt.", parent = self.tk)
+            """
+    def deleteQuizButtonCommand(self):
+        """This function is tied to the delete quiz button."""
+        # Get the name and ID of the quiz being deleted.
+        quizName = self.quizNames[self.currentlySelectedQuiz]
+        quizID = self.quizIDs[self.currentlySelectedQuiz]
+        # Ask user if they are sure, return if they say no.
+        if(not tkmb.askyesno("Delete Quiz", "Are you sure you want to delete the quiz \"" + quizName + "\"? Quiz is deleted for all users and all past results will be deleted too.", parent = self.tk)):
+            return
+        # Delete the quiz's questions.
+        self.database.execute("DELETE FROM `Questions` WHERE `QuizID` = ?;", float(quizID))
+        # Remove the quiz's results.
+        self.database.execute("DELETE FROM `Results` WHERE `QuizID` = ?;", float(quizID))
+        # Then delete the quiz from the database.
+        self.database.execute("DELETE FROM `Quizzes` WHERE `QuizID` = ?;", float(quizID))
+        # Refresh the quiz browser list.
+        self.refreshList()
     
     def userSettings(self) -> None:
         """This launches the user settings window, if there is a user logged in."""

@@ -1,5 +1,3 @@
-Exporting quizzes
-Deleting quizzes
 Pausing in quizzes
 Showing hints/help in quizzes
 Removing exam boards
@@ -7,3 +5,4 @@ Removing subjects
 Viewing statistics
 Filtering statistics
 Rendering charts
+Quiz hashing
