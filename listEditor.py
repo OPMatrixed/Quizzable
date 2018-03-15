@@ -38,6 +38,10 @@ class ListEditor(object):
 
 class SubjectEditor(ListEditor):
     def __init__(self, toplevel: tk.Tk, parent) -> None:
+        """
+        toplevel is the tkinter object of the parent window.
+        parent in the MainApp object, unless another dialog opens this window.
+        """
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Subject List Editor")
@@ -47,68 +51,146 @@ class SubjectEditor(ListEditor):
             self.subjectMapping.append(self.parent.inverseSubjectDictionary[i])
     
     def add(self) -> None:
+        """
+        This method is called by the 'Add' button.
+        It launches a dialog to ask the user for the name of the subject they are addding,
+        then it creates it in the database.
+        """
+        # Open the dialog and ask for the name of the new subject.
         name = tksd.askstring("Add new subject", "Name:", parent = self.window).strip()
-        if(name and len(name)):
-            if(len(name) < 2):
-                tkmb.showerror("Add subject error", "Name should be longer than 1 character.")
+        # If the name has not been entered, return (presence check).
+        if(not (name and len(name))):
+            return
+        # Length check, show an error message if too short or too long.
+        if(len(name) < 2):
+            tkmb.showerror("Add subject error", "Name should be longer than 1 character.")
+            return
+        if(len(name) > 20):
+            tkmb.showerror("Add subject error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
+            return
+        # TODO: Check against regex, allowed: alphabet, numbers, spaces and hyphens.
+        for i in self.parent.subjectDictionary.values():
+            # Check if the subject already exists in the database.
+            if(i.lower() == name.lower()):
+                tkmb.showerror("Add subject error", "Subject already exists in the list.")
                 return
-            if(len(name) > 20):
-                tkmb.showerror("Add subject error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
-                return
-            # TODO: Check against regex, allowed: alphabet, numbers, spaces and hyphens.
-            for i in self.parent.subjectDictionary.values():
-                if(i.lower() == name.lower()):
-                    tkmb.showerror("Add subject error", "Subject already exists in the list.")
-                    return
-            self.parent.database.execute("INSERT INTO `Subjects` (SubjectName) VALUES (?);", name)
-            # This gets the inserted record's id.
-            lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
-            id = lastRecord[0][0]
-            
-            self.parent.subjectDictionary[id] = name
-            self.parent.inverseSubjectDictionary[name] = id
-            
-            self.listView.insert(tk.END, name)
-            self.subjectMapping.append(id)
+        # If all the other checks pass, add the subject to the dictionary.
+        self.parent.database.execute("INSERT INTO `Subjects` (SubjectName) VALUES (?);", name)
+        # This gets the inserted record's id.
+        lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
+        id = lastRecord[0][0]
+        # Add the subject to the subject dictionaries.
+        self.parent.subjectDictionary[id] = name
+        self.parent.inverseSubjectDictionary[name] = id
+        # Then add the subject to the end of the list on screen and add it to the mapping.
+        self.listView.insert(tk.END, name)
+        self.subjectMapping.append(id)
     
     def remove(self) -> None:
-        index = self.listView.curselection()
+        """
+        This runs when the remove button is clicked.
+        It removes the subject that is currently selected in the list.
+        """
+        # Get the current list selection.
+        selection = self.listView.curselection()
+        if(not selection):
+            return
+        index = selection[0]
+        # If it isn't a valid index (e.g. nothing is selected), return.
         if(not(index and index >= 0 and index < len(self.subjectMapping))):
             return
+        # Get the subject ID from the subject-listview list.
         subjectID = self.subjectMapping[index]
+        # Unbind all quizzes that are bound to the subject being deleted.
+        self.parent.database.execute("UPDATE `Quizzes` SET SubjectID = null WHERE SubjectID = ?;", float(subjectID))
+        # Then delete the subject itself.
+        self.parent.database.execute("DELETE FROM `Subjects` WHERE SubjectID = ?;", float(subjectID))
+        # Remove the subject from the list.
+        self.listView.delete(index)
+        # Remove the subject from the mapping.
+        del self.subjectMapping[index]
+        # Remove it from the subject dictionaries.
+        subjectName = self.parent.subjectDictionary[subjectID]
+        del self.parent.subjectDictionary[subjectID]
+        del self.parent.inverseSubjectDictionary[subjectName]
+        # Reload the quiz browser
+        self.parent.refreshList()
 
 class ExamBoardEditor(ListEditor):
     def __init__(self, toplevel: tk.Tk, parent) -> None:
+        """
+        toplevel is the tkinter object of the parent window.
+        parent in the MainApp object, unless another dialog opens this window.
+        """
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Exam Board List Editor")
         self.examBoardMapping = []
         for i in self.parent.examboardDictionary.values():
+            # For every exam board in the database, add it to the list and the mapping list.
             self.listView.insert(tk.END, i)
             self.examBoardMapping.append(self.parent.inverseExamboardDictionary[i])
 
     def add(self) -> None:
+        """
+        This method is called by the 'Add' button.
+        It launches a dialog to ask the user for the name of the exam board they are addding,
+        then it creates it in the database.
+        """
+        # Open the dialog and ask for the name of the new exam board.
         name = tksd.askstring("Add new exam board", "Name:", parent = self.window).strip()
-        if(name and len(name)):
-            if(len(name) < 2):
-                tkmb.showerror("Add exam board error", "Name should be longer than 1 character.")
-            if(len(name) > 20):
-                tkmb.showerror("Add exam board error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
-            # TODO: Check against regex, allowed: alphabet, numbers, spaces and hyphens.
-            for i in self.parent.examboardDictionary.values():
-                if(i.lower() == name.lower()):
-                    tkmb.showerror("Add exam board error", "Exam board already exists in the list.")
-                    return
-            self.parent.database.execute("INSERT INTO `Examboards` (EName) VALUES (?);", name)
-            # This gets the inserted record's id.
-            lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
-            id = lastRecord[0][0]
-            
-            self.parent.examboardDictionary[id] = name
-            self.parent.inverseExamboardDictionary[name] = id
-            
-            self.listView.insert(tk.END, name)
-            self.examBoardMapping.append(id)
+        # If the name has not been entered, return (presence check).
+        if(not (name and len(name))):
+            return
+        # Length check, show an error message if too short or too long.
+        if(len(name) < 2):
+            tkmb.showerror("Add exam board error", "Name should be longer than 1 character.")
+        if(len(name) > 20):
+            tkmb.showerror("Add exam board error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
+        # TODO: Check against regex, allowed: alphabet, numbers, spaces and hyphens.
+        for i in self.parent.examboardDictionary.values():
+            # Check if the exam board already exists in the database.
+            if(i.lower() == name.lower()):
+                tkmb.showerror("Add exam board error", "Exam board already exists in the list.")
+                return
+        # If all the other checks pass, add the exam board to the dictionary.
+        self.parent.database.execute("INSERT INTO `Examboards` (EName) VALUES (?);", name)
+        # This gets the inserted record's id.
+        lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
+        id = lastRecord[0][0]
+        # Add the exam board to the exam board dictionaries.
+        self.parent.examboardDictionary[id] = name
+        self.parent.inverseExamboardDictionary[name] = id
+        # Then add it to the end of the list and to the exam board mapping.
+        self.listView.insert(tk.END, name)
+        self.examBoardMapping.append(id)
     
     def remove(self) -> None:
-        pass
+        """
+        This runs when the remove button is clicked.
+        It removes the exam board that is currently selected in the list.
+        """
+        # Get the current list selection.
+        selection = self.listView.curselection()
+        if(not selection):
+            return
+        index = selection[0]
+        # If it isn't a valid index (e.g. nothing is selected), return.
+        if(not(index and index >= 0 and index < len(self.examBoardMapping))):
+            return
+        # Get the exam board ID from the exam board-listview list.
+        examBoardID = self.subjectMapping[index]
+        # Unbind all quizzes that are bound to the exam board being deleted.
+        self.parent.database.execute("UPDATE `Quizzes` SET ExamboardID = null WHERE ExamboardID = ?;", float(examBoardID))
+        # Then delete the exam board itself.
+        self.parent.database.execute("DELETE FROM `Examboards` WHERE ExamboardID = ?;", float(examBoardID))
+        # Remove the exam board from the list.
+        self.listView.delete(index)
+        # Remove the exam board from the mapping.
+        del self.examBoardMapping[examBoardID]
+        # Remove it from the exam board dictionaries.
+        examBoardName = self.parent.examboardDictionary[examBoardID]
+        del self.parent.examboardDictionary[examBoardID]
+        del self.parent.inverseExamboardDictionary[examBoardName]
+        # Reload the quiz browser
+        self.parent.refreshList()
