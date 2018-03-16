@@ -68,11 +68,15 @@ class StatisticsDialog(object):
         self.statisticsList = tk.Listbox(self.statsFrame)
         self.quizReviewList = tk.Listbox(self.statsFrame)
         # Scroll bars
-        self.latestResultsScroll = tk.Scrollbar(self.statsFrame)
-        self.statisticsScroll = tk.Scrollbar(self.statsFrame)
-        self.quizReviewScroll = tk.Scrollbar(self.statsFrame)
+        self.latestResultsScroll = tk.Scrollbar(self.statsFrame, command = self.latestResultsList.yview)
+        self.statisticsScroll = tk.Scrollbar(self.statsFrame, command = self.statisticsList.yview)
+        self.quizReviewScroll = tk.Scrollbar(self.statsFrame, command = self.quizReviewList.yview)
+        
+        self.latestResultsList.config(yscrollcommand = self.latestResultsScroll.set)
+        self.statisticsList.config(yscrollcommand = self.statisticsScroll.set)
+        self.quizReviewList.config(yscrollcommand = self.quizReviewScroll.set)
         # Buttons
-        self.viewChartsButton = tk.Button(self.statsFrame, text = "View charts", padx = 30, pady = 3)
+        self.viewChartsButton = tk.Button(self.statsFrame, text = "View charts", padx = 30, pady = 3, command = self.unloadMainStats)
         self.redoQuizButton = tk.Button(self.statsFrame, text = "Redo quiz", padx = 30, pady = 3)
         
         # Positioning the elements in the frame
@@ -116,6 +120,10 @@ class StatisticsDialog(object):
         recentResultRows = self.parent.database.execute("SELECT TOP 15 * FROM `Results` WHERE `UserID` = ? ORDER BY `DateCompleted` DESC;", float(self.parent.currentUser.id))
         allResultRows = self.parent.database.execute("SELECT * FROM `Results` WHERE `UserID` = ?;", float(self.parent.currentUser.id))
         
+        if(not len(allResultRows)):
+            self.statisticsList.insert(tk.END, "No data.")
+            return
+        
         totalDuration = 0
         totalAverageAnswerTime = 0
         totalScore = 0
@@ -125,12 +133,33 @@ class StatisticsDialog(object):
             totalAverageAnswerTime += i[5]
             totalScore += i[3]
             totalSecondsIntoDay += i[4].hour * 3600 + i[4].minute * 60 + i[4].second
+        
         self.statisticsList.insert(tk.END, "Averages for your last " + str(len(recentResultRows)) + " quiz attempts.")
         self.statisticsList.insert(tk.END, "Quiz duration: " + str(round(totalDuration / len(recentResultRows), 1)) + "s")
-        self.statisticsList.insert(tk.END, "Answer time: " + str(round(totalAverageAnswerTime / len(recentResultRows), 1)) + "s")
+        self.statisticsList.insert(tk.END, "Time to answer: " + str(round(totalAverageAnswerTime / len(recentResultRows), 1)) + "s")
         self.statisticsList.insert(tk.END, "Score: " + str(round(100 * totalScore / len(recentResultRows))) + "%")
         averageSecondsIntoDay = int(totalSecondsIntoDay / len(recentResultRows))
         self.statisticsList.insert(tk.END, "Time of day: " + str(averageSecondsIntoDay // 3600) + ":" + str((averageSecondsIntoDay // 60) % 60))
+        self.statisticsList.insert(tk.END, "")
+        
+        uniqueQuizzesAttempted = self.parent.database.execute("SELECT Count(*) AS `DistinctQuizzes` FROM (SELECT DISTINCT `QuizID` FROM `Results` WHERE `UserID` = ?);", float(self.parent.currentUser.id))[0][0];
+        
+        self.statisticsList.insert(tk.END, "All time statistics.")
+        self.statisticsList.insert(tk.END, "No. of quiz attempts: " + str(len(allResultRows)))
+        self.statisticsList.insert(tk.END, "No. of unique quizzes attempted: " + str(uniqueQuizzesAttempted))
+        self.statisticsList.insert(tk.END, "")
+        totalDuration = 0
+        totalAverageAnswerTime = 0
+        totalScore = 0
+        for i in allResultRows:
+            totalDuration += i[6]
+            totalAverageAnswerTime += i[5]
+            totalScore += i[3]
+        
+        self.statisticsList.insert(tk.END, "All time averages.")
+        self.statisticsList.insert(tk.END, "Quiz duration: " + str(round(totalDuration / len(allResultRows), 1)) + "s")
+        self.statisticsList.insert(tk.END, "Answer time: " + str(round(totalAverageAnswerTime / len(allResultRows), 1)) + "s")
+        self.statisticsList.insert(tk.END, "Score: " + str(round(100 * totalScore / len(allResultRows))) + "%")
     
     def applyFilters(self) -> None:
         """
@@ -141,7 +170,6 @@ class StatisticsDialog(object):
     
     def unloadMainStats(self) -> None:
         """This unloads all the main statistics view, ready to replace it with the charts in the same window shell."""
-        
         # Destroying the elements.
         self.filterBySubjectComboBox.destroy()
         self.filterByExamBoardComboBox.destroy()
@@ -160,33 +188,54 @@ class StatisticsDialog(object):
         self.redoQuizButton.destroy()
         self.statsFrame.destroy()
         
-        # Resetting the grid configuration
+        # Resetting the grid configuration.
         self.window.grid_columnconfigure(0, weight = 0)
         self.window.grid_columnconfigure(1, weight = 0)
         self.window.grid_columnconfigure(2, weight = 0)
         self.window.grid_columnconfigure(3, weight = 0)
         self.window.grid_rowconfigure(0, weight = 0)
         self.window.grid_rowconfigure(1, weight = 0)
+        
+        # Load the charts screen.
+        self.loadCharts()
     
     def loadCharts(self) -> None:
         """This will load in the charts screen into this window upon clicking the "View charts" button."""
-        
-        # The large header text
+        # Setting up the grid configuration
+        self.window.grid_columnconfigure(0, weight = 1)
+        self.window.grid_rowconfigure(0, weight = 1)
+        # The large header text.
         self.chartsHeaderText = tk.Label(self.window, text = "Charts view")
         
         # The canvas object, on which the charts will be drawn.
         self.chartCanvas = tk.Canvas(self.window)
         self.miscStatsLabel = tk.Label(self.window, text = "")
-        self.goBackToMainStatsButton = tk.Button(self.window, text = "")
+        self.goBackToMainStatsButton = tk.Button(self.window, text = "Return to statistics", command = self.unloadCharts)
         
         # The positioning of the elements.
         self.chartsHeaderText.grid(row = 0, column = 0)
-        self.chartCanas.grid(row = 1, column = 0)
+        self.chartCanvas.grid(row = 1, column = 0)
         self.miscStatsLabel.grid(row = 0, column = 1, rowspan = 2)
+        self.goBackToMainStatsButton.grid(row = 1, column = 1)
     
     def unloadCharts(self) -> None:
         """This unloads the charts and goes back to the main statistics view."""
-        pass
+        # Destroying the elements
+        self.chartsHeaderText.destroy()
+        self.chartCanvas.destroy()
+        self.miscStatsLabel.destroy()
+        self.goBackToMainStatsButton.destroy()
+        
+        # Resetting the grid configuration.
+        self.window.grid_columnconfigure(0, weight = 0)
+        self.window.grid_columnconfigure(1, weight = 0)
+        self.window.grid_columnconfigure(2, weight = 0)
+        self.window.grid_columnconfigure(3, weight = 0)
+        self.window.grid_rowconfigure(0, weight = 0)
+        self.window.grid_rowconfigure(1, weight = 0)
+        
+        # Load the statistics screen
+        self.loadMainStats()
     
     def redoQuiz(self) -> None:
         """

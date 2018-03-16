@@ -30,7 +30,7 @@ class MainWindowStates:
 
 class MainMenu(object):
     appName = "Quizzable"
-    appVersion = "Alpha v0.6"
+    appVersion = "Alpha v0.8"
     def __init__(self, tkobj: tk.Tk) -> None:
         """
         This method is called when MainMenu is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
@@ -81,10 +81,9 @@ class MainMenu(object):
         This will add the menu bar to the top of the window.
         Returns nothing.
         This imports the userGui module from the application directory, which is used for the user settings dialog.
-        It also imports statsGui, which has the statistics dialog.
+        This also imports the listEditor module, which is used to open the subject and exam board editor dialogs.
         """
         import userGui
-        import statsGui
         import listEditor
         
         # Creating the menu object.
@@ -113,7 +112,7 @@ class MainMenu(object):
         self.menuBar.add_cascade(label = "User", menu = self.userMenu)
         self.menuBar.add_cascade(label = "Subjects & Exam Boards", menu = self.subjectsAndExamBoardsMenu)
         
-        self.menuBar.add_command(label = "Statistics", command = lambda: statsGui.StatisticsDialog(self.tk, self))
+        self.menuBar.add_command(label = "Statistics", command = self.launchStatistics)
         
         # Assigns the menu to the window.
         self.tk.config(menu = self.menuBar)
@@ -123,7 +122,6 @@ class MainMenu(object):
         This method loads the elements of the login screen on to the main window.
         No arguments or return values.
         """
-        
         # This import is a file in the base directory, and holds the UserCreateDialog class which is used here.
         import userGui
         # This is the specification of the header font.
@@ -711,6 +709,7 @@ class MainMenu(object):
     def userSettings(self) -> None:
         """This launches the user settings window, if there is a user logged in."""
         if(self.currentUser):
+            # If a user is logged in, launch the window.
             import userGui
             userGui.UserSettingsDialog(self.tk, self)
         else:
@@ -726,6 +725,15 @@ class MainMenu(object):
         self.unloadQuizBrowserScreen()
         self.unloadSidePanel()
         self.loadLoginScreen()
+    
+    def launchStatistics(self) -> None:
+        """This loads the statistics dialog, if there is a user logged in."""
+        if(self.currentUser):
+            # If a user is logged in, launch the window.
+            import statsGui
+            statsGui.StatisticsDialog(self.tk, self)
+        else:
+            tkmb.showerror("User error", "No user currently selected, can't show user statistics.")
     
     def endApplication(self) -> None:
         """Called when the application is ending."""

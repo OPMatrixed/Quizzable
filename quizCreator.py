@@ -35,7 +35,6 @@ class QuizCreatorDialog(object):
     
     def loadScreenElements(self):
         """This loads all the widgets onto the screen."""
-        
         # Configure the grid
         self.window.grid_columnconfigure(1, weight = 1)
         self.window.grid_columnconfigure(3, weight = 1)
