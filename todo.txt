@@ -1,6 +1,0 @@
-Pausing in quizzes
-Showing hints/help in quizzes
-Viewing statistics
-Filtering statistics
-Rendering charts
-Quiz hashing

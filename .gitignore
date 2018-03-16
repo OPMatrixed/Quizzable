@@ -1,5 +1,5 @@
-testing.py
-testquiz.xml
+*.xml
+*.txt
 __pycache__/
 
 Thumbs.db
