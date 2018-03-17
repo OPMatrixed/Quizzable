@@ -25,6 +25,7 @@ class DatabaseManager(object):
         else, it returns the number of affected lines.
         """
         # This executes the given SQL command given as many arguments as necessary.
+        print(" | ".join([str(i) for i in command]))
         value = self.dbCursor.execute(*command)
         # Returns the results of the command.
         try:
