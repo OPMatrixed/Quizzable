@@ -615,9 +615,9 @@ class MainMenu(object):
         
         print("Loading: " + self.quizNames[self.currentlySelectedQuiz]) # A debugging line, to check if the correct quiz is being loaded.
         # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
-        quiz = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
+        quizObj = quiz.Quiz.getQuiz(self.quizIDs[self.currentlySelectedQuiz], self.database)
         # This then launches the window, passing the loaded quiz as an argument.
-        quizGui.ActiveQuizDialog(self.tk, self, quiz, self.currentUser)
+        quizGui.ActiveQuizDialog(self.tk, self, quizObj, self.currentUser)
     
     def editQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
