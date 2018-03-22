@@ -5,6 +5,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.messagebox as tkmb
 
+import math as maths
+
 class StatisticsDialog(object):
     def __init__(self, toplevel: tk.Tk, parent) -> None:
         """
@@ -16,8 +18,8 @@ class StatisticsDialog(object):
         # This creates the window. padx and pady here add 5 pixels padding horizontally and vertically respectively
         # This is to stop the widgets on the window from touching the edges of the window, which doesn't look that good.
         self.window = tk.Toplevel(toplevel, padx = 5, pady = 5)
-        # Dimensions of the window: 500 pixels wide by 300 pixels high.
-        self.window.geometry("800x400")
+        # Dimensions of the window: 900 pixels wide by 500 pixels high.
+        self.window.geometry("900x500")
         # The minimum dimensions of the window, as this window is resizable.
         self.window.minsize(width = 600, height = 400)
         # Setting the title of the window.
@@ -124,7 +126,7 @@ class StatisticsDialog(object):
     def listQuizzesToRedo(self):
         """
         This lists the quizzes which have less than a 60% average score over the last three attempts.
-        """
+        """ # TODO: comment
         quizAverages = {}
         self.reviewList = []
         for i in self.currentResults:
@@ -270,17 +272,21 @@ class StatisticsDialog(object):
         
         # Load the charts screen.
         self.loadCharts()
+        self.renderCharts()
     
     def loadCharts(self) -> None:
         """This will load in the charts screen into this window upon clicking the "View charts" button."""
         # Setting up the grid configuration
         self.window.grid_columnconfigure(0, weight = 1)
         self.window.grid_rowconfigure(0, weight = 1)
+        self.window.grid_rowconfigure(1, weight = 1)
         # The large header text.
         self.chartsHeaderText = tk.Label(self.window, text = "Charts view")
         
+        self.canvasWidth = 800
+        self.canvasHeight = 400
         # The canvas object, on which the charts will be drawn.
-        self.chartCanvas = tk.Canvas(self.window)
+        self.chartCanvas = tk.Canvas(self.window, width = self.canvasWidth, height = self.canvasHeight, bg = "white")
         self.miscStatsLabel = tk.Label(self.window, text = "")
         self.goBackToMainStatsButton = tk.Button(self.window, text = "Return to statistics", command = self.unloadCharts)
         
@@ -289,6 +295,37 @@ class StatisticsDialog(object):
         self.chartCanvas.grid(row = 1, column = 0)
         self.miscStatsLabel.grid(row = 0, column = 1, rowspan = 2)
         self.goBackToMainStatsButton.grid(row = 1, column = 1)
+    
+    def generateChartData(self) -> list:
+        scoreBands = [0]*11
+        for i in self.currentResults:
+            scoreBands[maths.floor(i[3] * 10)] += 1
+        return scoreBands
+    
+    def linearlyInterpolateColours(colour1: list, colour2: list, ratio: float) -> list:
+        colourDifference = [colour2[i] - colour1[i] for i in range(3)]
+        return [round(colourDifference[i] * ratio + colour1[i]) for i in range(3)]
+    
+    def renderCharts(self) -> None:
+        """Draws the shapes required to draw charts on the charts view."""
+        print("Rendering charts")
+        self.chartCanvas.create_line(50, 10, 50, self.canvasHeight - 45)
+        barWidth = 30
+        barGap = 10
+        scoreBands = self.generateChartData()
+        topBand = maths.ceil(max(scoreBands)/10) * 10
+        self.chartCanvas.create_line(50, self.canvasHeight - 45, 60 + 11*(barWidth+barGap), self.canvasHeight - 45)
+        for i in range(11):
+            self.chartCanvas.create_text(25, 15 + i * (self.canvasHeight - 65)/10, text = str(round((1 - i/10)*topBand)))
+        print(scoreBands)
+        for i in range(11):
+            height = scoreBands[i] / topBand
+            fillColour = "#%02x%02x%02x" % tuple(StatisticsDialog.linearlyInterpolateColours([220, 20, 60], [0, 238, 118], i/10))
+            self.chartCanvas.create_rectangle(60 + i*(barWidth+barGap), 9 + (1 - height) * (self.canvasHeight - 55), 60 + barWidth + i*(barWidth+barGap), self.canvasHeight - 45, fill = fillColour)
+            barText = str(10*i) + "-\n" + str(10*(1+i)-1) + "%"
+            if(i == 10):
+                barText = "100%"
+            self.chartCanvas.create_text(60 + barWidth/2 + i*(barWidth+barGap), self.canvasHeight - 29, text = barText)
     
     def unloadCharts(self) -> None:
         """This unloads the charts and goes back to the main statistics view."""
@@ -324,6 +361,3 @@ class StatisticsDialog(object):
         quizObj = quiz.Quiz.getQuiz(quizID, self.parent.database)
         # This then launches the window, passing the loaded quiz as an argument.
         quizGui.ActiveQuizDialog(self.parent.tk, self.parent, quizObj, self.parent.currentUser)
-    
-    def renderCharts(self) -> None:
-        pass

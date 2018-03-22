@@ -19,20 +19,29 @@ class ListEditor(object):
         self.window.geometry("200x300+100+100")
         # The minimum dimensions of the window, as this window is resizable.
         self.window.minsize(width = 110, height = 100)
+        # Configuring the window grid layout.
         self.window.grid_rowconfigure(0, weight = 1)
         self.window.grid_columnconfigure(0, weight = 1)
         self.window.grid_columnconfigure(1, weight = 1)
+        # Creating the frame which will hold the list and its scroll bar, and be spread over two grid columns.
         self.listFrame = tk.Frame(self.window)
+        # The list itself.
         self.listView = tk.Listbox(self.listFrame)
+        # Its scroll bar.
         self.scrollBar = tk.Scrollbar(self.listFrame, command = self.listView.yview)
         self.listView.config(yscrollcommand = self.scrollBar.set)
+        # Positioning all the elements in the frame.
         self.listView.grid(row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         self.scrollBar.grid(row = 0, column = 1, sticky = tk.N+tk.S)
+        # Configuring the frame grid layout.
         self.listFrame.grid_columnconfigure(0, weight = 1)
         self.listFrame.grid_rowconfigure(0, weight = 1)
+        # Placing the frame itself in the grid layout of the whole window.
         self.listFrame.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W+tk.E+tk.N+tk.S)
+        # Creating the buttons at the bottom of the window.
         self.addNewButton = tk.Button(self.window, text = "Add new", command = self.add)
         self.removeButton = tk.Button(self.window, text = "Remove", command = self.remove)
+        # Positioning the buttons.
         self.addNewButton.grid(row = 1, column = 0)
         self.removeButton.grid(row = 1, column = 1)
 
@@ -57,10 +66,12 @@ class SubjectEditor(ListEditor):
         then it creates it in the database.
         """
         # Open the dialog and ask for the name of the new subject.
-        name = tksd.askstring("Add new subject", "Name:", parent = self.window).strip()
+        name = tksd.askstring("Add new subject", "Name:", parent = self.window)
         # If the name has not been entered, return (presence check).
-        if(not (name and len(name))):
+        if(not (name and len(name) and len(name.strip()))):
             return
+        # Remove whitespace characters from both ends of the string, if they are there.
+        name = name.strip()
         # Length check, show an error message if too short or too long.
         if(len(name) < 2):
             tkmb.showerror("Add subject error", "Name should be longer than 1 character.")
@@ -138,10 +149,12 @@ class ExamBoardEditor(ListEditor):
         then it creates it in the database.
         """
         # Open the dialog and ask for the name of the new exam board.
-        name = tksd.askstring("Add new exam board", "Name:", parent = self.window).strip()
+        name = tksd.askstring("Add new exam board", "Name:", parent = self.window)
         # If the name has not been entered, return (presence check).
-        if(not (name and len(name))):
+        if(not (name and len(name) and len(name.strip()))):
             return
+        # Remove whitespace characters from both ends of the string, if they are there.
+        name = name.strip()
         # Length check, show an error message if too short or too long.
         if(len(name) < 2):
             tkmb.showerror("Add exam board error", "Name should be longer than 1 character.")

@@ -30,7 +30,7 @@ class MainWindowStates:
 
 class MainMenu(object):
     appName = "Quizzable"
-    appVersion = "Alpha v0.8"
+    appVersion = "v0.9"
     def __init__(self, tkobj: tk.Tk) -> None:
         """
         This method is called when MainMenu is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
@@ -245,8 +245,10 @@ class MainMenu(object):
         # Create a Quiz and Import a Quiz Buttons
         self.createQuizButton = tk.Button(self.tk, text = "Create a Quiz", command = self.createQuizButtonCommand)
         self.importQuizButton = tk.Button(self.tk, text = "Import a Quiz", command = self.importQuizButtonCommand)
+        self.statisticsViewButton = tk.Button(self.tk, text = "View statistics", command = self.launchStatistics)
         self.createQuizButton.grid(row = 0, column = 2)
         self.importQuizButton.grid(row = 0, column = 3)
+        self.statisticsViewButton.grid(row = 1, column = 3)
         # The quiz filters, as comboboxes. They default to having the text "Filter by ...", but after selecting another value they can't go back to "Filter by ..."
         # To remove the filter after selecting a value for the filter, the user must select the combobox and select "No filter".
         self.filterByExamBoardCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.examboardDictionary.values()])
