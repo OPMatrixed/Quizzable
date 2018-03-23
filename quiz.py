@@ -212,7 +212,7 @@ class Quiz(object):
         """
         This will import a quiz from an XML file and load it as a Quiz object.
         It will save it to the database by default.
-        """ # TODO: Run all validation checks
+        """ # TODO: Comment
         tree = None
         root = None
         metadata = None

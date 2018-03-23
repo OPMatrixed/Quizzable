@@ -3,8 +3,10 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
+import tkinter.messagebox as tkmb
 
 import math as maths
+import threading
 
 class ActiveQuizDialog(object):
     def __init__(self, toplevel: tk.Tk, parent, quiz: 'Quiz', currentUser: 'User') -> None:
@@ -14,8 +16,6 @@ class ActiveQuizDialog(object):
         quiz is the Quiz object that will contain all the Quiz's data.
         currentUser is the User object of the currently selected user, used for recording results at the end.
         """
-        import threading
-        
         self.parent = parent
         self.toplevel = toplevel
         # The quiz the window is dealing with.
@@ -67,7 +67,7 @@ class ActiveQuizDialog(object):
         self.questionLabel  = tk.Label(self.window, anchor = tk.W, font = self.questionFont, justify = tk.LEFT, wraplength = 550,
                 text = "<Question goes here> \n<If the question is a long question, then this text box spans over multiple lines>")
         self.usernameLabel  = tk.Label(self.window, text = self.user.username, font = self.questionFont)
-        self.timeLimitLabel = tk.Label(self.window, text = "<Time limit>", font = self.questionFont)
+        self.timeLimitLabel = tk.Label(self.window, text = "", font = self.questionFont)
         # Positioning the text labels on the top 3 rows.
         self.quizNameLabel.grid(row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizSubjectAndExamBoardLabel.grid(row = 1, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
@@ -86,9 +86,9 @@ class ActiveQuizDialog(object):
         self.answerButtons[2].grid(row = 5, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         self.answerButtons[3].grid(row = 6, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
         # The option buttons
-        self.hintButton = tk.Button(self.window, text = "Hint")
-        self.helpButton = tk.Button(self.window, text = "Help!")
-        self.pauseButton = tk.Button(self.window, text = "Pause")
+        self.hintButton = tk.Button(self.window, text = "Hint", command = self.showHint)
+        self.helpButton = tk.Button(self.window, text = "Help!", command = self.showHelp)
+        self.pauseButton = tk.Button(self.window, text = "Pause", command = self.pause)
         self.endQuizButton = tk.Button(self.window, text = "End Quiz", command = self.finish)
         # Positioning the option buttons
         self.hintButton.grid(row = 3, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
@@ -107,10 +107,23 @@ class ActiveQuizDialog(object):
             self.theirAnswer = answer
             self.currentState = 1
     
+    def showHint(self):
+        if(self.quiz.questions[self.questionNumber].hint):
+            tkmb.showinfo("Hint", self.quiz.questions[self.questionNumber].hint, parent = self.window)
+    
+    def showHelp(self):
+        if(self.quiz.questions[self.questionNumber].help):
+            self.theirAnswer = 4
+            self.currentState = 1
+            tkmb.showinfo("Help", self.quiz.questions[self.questionNumber].help, parent = self.window)
+    
+    def pause(self):
+        self.paused = not self.paused
+    
     def quizThread(self):
         """This subroutine is run in a separate thread, and it will manage the quiz window while the user is doing the quiz."""
         import time # Used to keep track of times
-        questionNumber = 0 # The question number of the quiz that should be displayed on the next iteration.
+        self.questionNumber = 0 # The question number of the quiz that should be displayed on the next iteration.
         currentQuestion = -1 # The current question number that is currently being displayed.
         currentQuestionStartTime = 0 # The time that the current question was initially displayed, stored as the time since the thread started, in seconds.
         answerTime = 0 # The time that the quiz window will move on from the current question after the user has answered, stored as the time since the thread started, in seconds.
@@ -118,24 +131,59 @@ class ActiveQuizDialog(object):
         self.theirAnswer = -1 # The answer that the user gives, which is set every time a user clicks on an answer button.
         correctAnswer = -1 # The correct answer to the current question.
         self.numberOfCorrectAnswers = 0 # The number of answers that have been answered correctly.
-        self.totalPausedDuration = 0 # The length of time that the quiz has been paused for.
-        self.timesTakenToAnswer = [None for i in range(len(self.quiz.questions))]
-        self.totalDuration = None
-        self.startTime = time.clock()
+        self.totalPausedDuration = 0 # The length of time that the quiz has been paused for, in seconds.
+        self.timesTakenToAnswer = [None for i in range(len(self.quiz.questions))] # The time it took to answer each question, in seconds.
+        self.totalDuration = None # The total duration of the quiz, in seconds.
+        self.startTime = time.clock() # The time that the quiz started, in seconds.
+        wasPaused = False
+        self.paused = False
         while self.running:
-            if(currentQuestion != questionNumber):
+            if(self.paused == True and wasPaused == True):
+                # The quiz is still paused.
+                time.sleep(0.1)
+                self.totalPausedDuration += 0.1
+                currentQuestionStartTime += 0.1
+                continue
+            if(self.paused == True and wasPaused == False):
+                # Quiz has just been paused.
+                self.questionLabel.config(text = "PAUSED")
+                self.hintButton.config(state = tk.DISABLED)
+                self.helpButton.config(state = tk.DISABLED)
+                for i in range(4):
+                    # This disables all the buttons.
+                    self.answerButtons[i].config(state = tk.DISABLED, text = "PAUSED")
+                wasPaused = True
+                continue
+            if(self.paused == False and wasPaused == True):
+                # Quiz has just been unpaused.
+                if(self.state == 0):
+                    self.questionLabel.config(text = self.quiz.questions[self.questionNumber].question)
+                    answers, correctAnswer = self.quiz.questions[self.questionNumber].getShuffledAnswers()
+                    for i in range(len(answers)):
+                        # This recolours and re-enables buttons, as after each question the font colour of each button changes, and some buttons may be disabled.
+                        self.answerButtons[i].config(text = answers[i], fg = "black", bg = "SystemButtonFace")
+                        self.answerButtons[i].config(state = tk.NORMAL)
+                    for i in range(4, len(answers), -1):
+                        # This disables buttons if there is less than four answers for a given question.
+                        self.answerButtons[i].config(state = tk.DISABLED, text = "")
+                    self.hintButton.config(state = tk.NORMAL if self.quiz.questions[self.questionNumber].hint else tk.DISABLED)
+                    self.helpButton.config(state = tk.NORMAL if self.quiz.questions[self.questionNumber].help else tk.DISABLED)
+                else:
+                    self.questionLabel.config(text = "Next question coming in a moment...")
+                wasPaused = False
+            if(currentQuestion != self.questionNumber):
                 # A new question needs to be displayed
-                if(len(self.quiz.questions) == questionNumber):
+                if(len(self.quiz.questions) == self.questionNumber):
                     # This code is run when the user has finished the quiz.
                     self.currentState = 2
                     self.running = False
                     continue
                 # The next question's text is displayed
-                self.questionLabel.config(text = self.quiz.questions[questionNumber].question)
+                self.questionLabel.config(text = self.quiz.questions[self.questionNumber].question)
                 currentQuestionStartTime = time.clock()
-                currentQuestion = questionNumber
+                currentQuestion = self.questionNumber
                 # Gets the shuffled answers to the current question.
-                answers, correctAnswer = self.quiz.questions[questionNumber].getShuffledAnswers()
+                answers, correctAnswer = self.quiz.questions[self.questionNumber].getShuffledAnswers()
                 for i in range(len(answers)):
                     # This recolours and re-enables buttons, as after each question the font colour of each button changes, and some buttons may be disabled.
                     self.answerButtons[i].config(text = answers[i], fg = "black", bg = "SystemButtonFace")
@@ -143,6 +191,9 @@ class ActiveQuizDialog(object):
                 for i in range(4, len(answers), -1):
                     # This disables buttons if there is less than four answers for a given question.
                     self.answerButtons[i].config(state = tk.DISABLED, text = "")
+                self.hintButton.config(state = tk.NORMAL if self.quiz.questions[self.questionNumber].hint else tk.DISABLED)
+                self.helpButton.config(state = tk.NORMAL if self.quiz.questions[self.questionNumber].help else tk.DISABLED)
+                self.timeLimitLabel.config(text = "")
                 # Resetting their answer and the state variables.
                 self.theirAnswer = -1
                 self.currentState = 0
@@ -178,29 +229,36 @@ class ActiveQuizDialog(object):
             if(self.theirAnswer == -1):
                 if(self.currentState == 0):
                     # If they have not entered an answer, and the window is in the state where it is awaiting an answer:
-                    # Calculate the time remaining.
-                    timeRemaining = currentQuestionStartTime + 5 + self.quiz.difficulty * 5 - time.clock() # TODO: Changing the timer setting should affect this.
-                    if(timeRemaining <= 0):
-                        # If the user has ran out of time:
-                        # Display 'Out of time!', in red, where the countdown timer was.
-                        self.timeLimitLabel.config(text = "Out of time!", fg = "red")
-                        for i in range(len(self.answerButtons)):
-                            # For each of the answer buttons:
-                            if(i == correctAnswer):
-                                # Make the text green if it was the correct button
-                                self.answerButtons[i].config(fg = "green")
-                            else:
-                                # Make the text red if it was the wrong button
-                                self.answerButtons[i].config(fg = "red")
-                        self.currentState = 1
-                        # Display the next question after 5 seconds of delay.
-                        answerTime = time.clock() + 5
-                    else:
-                        # If the user still has time left, display the remaining time in seconds, rounded up to the nearest integer.
-                        self.timeLimitLabel.config(text = str(maths.ceil(timeRemaining)), fg = "black")
+                    if(self.user.timeConfig):
+                        # If the user has timers enabled in their settings, calculate the time remaining.
+                        timeRemaining = currentQuestionStartTime -  time.clock()
+                        if(self.user.timeConfig == 1):
+                            # If the timer setting is set to long, time allowed is 5 seconds + 5 per difficulty level.
+                            timeRemaining += 5 + self.quiz.difficulty * 5
+                        else:
+                            # If the timer is set to short, it is half the long time.
+                            timeRemaining += 2.5 + self.quiz.difficulty * 2.5
+                        if(timeRemaining <= 0):
+                            # If the user has ran out of time:
+                            # Display 'Out of time!', in red, where the countdown timer was.
+                            self.timeLimitLabel.config(text = "Out of time!", fg = "red")
+                            for i in range(len(self.answerButtons)):
+                                # For each of the answer buttons:
+                                if(i == correctAnswer):
+                                    # Make the text green if it was the correct button
+                                    self.answerButtons[i].config(fg = "green")
+                                else:
+                                    # Make the text red if it was the wrong button
+                                    self.answerButtons[i].config(fg = "red")
+                            self.currentState = 1
+                            # Display the next question after 5 seconds of delay.
+                            answerTime = time.clock() + 5
+                        else:
+                            # If the user still has time left, display the remaining time in seconds, rounded up to the nearest integer.
+                            self.timeLimitLabel.config(text = str(maths.ceil(timeRemaining)), fg = "black")
                 elif(self.currentState == 1 and answerTime <= time.clock()):
                     # If the delay after answering a question is over, show the next question.
-                    questionNumber += 1
+                    self.questionNumber += 1
             # Wait 0.1 seconds before running through the loop again, to reduce load on CPU.
             time.sleep(0.1)
         # If the user has finished the quiz and hasn't terminated the quiz elsewhere:
@@ -240,9 +298,10 @@ class ActiveQuizDialog(object):
     
     def loadFinishedView(self) -> None:
         """This method displays the end of quiz statistics, after the user has finished the quiz."""
-        self.questionLabel.config(text = "Quiz Completed!")
+        self.questionLabel.config(text = "Quiz Completed!", anchor = tk.CENTER)
         self.scoreLabel = tk.Label(self.window, text = "Score: " + str(self.numberOfCorrectAnswers) + "/" + str(len(self.quiz.questions)), font = self.questionFont)
-        self.timeLabel = tk.Label(self.window, text = "Time taken: " + str(maths.ceil(self.totalDuration * 10) / 10) + " seconds", font = self.questionFont)
+        timeTakenString = (str(round(self.totalDuration // 60)) + "m " if self.totalDuration >= 60 else "") + (str(round((maths.ceil(self.totalDuration * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(self.totalDuration * 10) / 10) % 60, 1) else "")
+        self.timeLabel = tk.Label(self.window, text = "Time taken: " + timeTakenString, font = self.questionFont)
         self.scoreLabel.grid(row = 3, column = 0)
         self.timeLabel.grid(row = 4, column = 0)
     

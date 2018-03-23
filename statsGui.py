@@ -19,7 +19,7 @@ class StatisticsDialog(object):
         # This is to stop the widgets on the window from touching the edges of the window, which doesn't look that good.
         self.window = tk.Toplevel(toplevel, padx = 5, pady = 5)
         # Dimensions of the window: 900 pixels wide by 500 pixels high.
-        self.window.geometry("900x500")
+        self.window.geometry("920x500")
         # The minimum dimensions of the window, as this window is resizable.
         self.window.minsize(width = 600, height = 400)
         # Setting the title of the window.
@@ -121,7 +121,9 @@ class StatisticsDialog(object):
                 if(self.parent.allQuizzes[j][0] == i[2]):
                     quizName = self.parent.allQuizzes[j][1]
             # Add the score, time taken and name to the latest results list box.
-            self.latestResultsList.insert(tk.END, str(round(100 * i[3])) + "% - " + str(round(i[6], 1)) + "s - " + quizName)
+            timeInSeconds = i[6]
+            timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
+            self.latestResultsList.insert(tk.END, str(round(100 * i[3])) + "% - " + timeTakenString + " - " + quizName)
     
     def listQuizzesToRedo(self):
         """
@@ -281,7 +283,7 @@ class StatisticsDialog(object):
         self.window.grid_rowconfigure(0, weight = 1)
         self.window.grid_rowconfigure(1, weight = 1)
         # The large header text.
-        self.chartsHeaderText = tk.Label(self.window, text = "Charts view")
+        self.chartsHeaderText = tk.Label(self.window, text = "Charts view, based off of last applied filters.")
         
         self.canvasWidth = 800
         self.canvasHeight = 400
@@ -298,9 +300,11 @@ class StatisticsDialog(object):
     
     def generateChartData(self) -> list:
         scoreBands = [0]*11
+        totalScore = 0
         for i in self.currentResults:
             scoreBands[maths.floor(i[3] * 10)] += 1
-        return scoreBands
+            totalScore += i[3]
+        return scoreBands, totalScore / len(self.currentResults)
     
     def linearlyInterpolateColours(colour1: list, colour2: list, ratio: float) -> list:
         colourDifference = [colour2[i] - colour1[i] for i in range(3)]
@@ -312,9 +316,10 @@ class StatisticsDialog(object):
         self.chartCanvas.create_line(50, 10, 50, self.canvasHeight - 45)
         barWidth = 30
         barGap = 10
-        scoreBands = self.generateChartData()
+        scoreBands, averageScore = self.generateChartData()
         topBand = maths.ceil(max(scoreBands)/10) * 10
         self.chartCanvas.create_line(50, self.canvasHeight - 45, 60 + 11*(barWidth+barGap), self.canvasHeight - 45)
+        self.chartCanvas.create_text(55 + 5.5*(barWidth + barGap), 10, text = "Amount of quizzes completed in given percentage score bands")
         for i in range(11):
             self.chartCanvas.create_text(25, 15 + i * (self.canvasHeight - 65)/10, text = str(round((1 - i/10)*topBand)))
         print(scoreBands)
@@ -325,8 +330,16 @@ class StatisticsDialog(object):
             barText = str(10*i) + "-\n" + str(10*(1+i)-1) + "%"
             if(i == 10):
                 barText = "100%"
-            self.chartCanvas.create_text(60 + barWidth/2 + i*(barWidth+barGap), self.canvasHeight - 29, text = barText)
-    
+            self.chartCanvas.create_text(60 + barWidth/2 + i*(barWidth+barGap), self.canvasHeight - 29, text = barText, justify = tk.CENTER)
+        
+        arcDegrees = 360 * averageScore
+        arcRadians = arcDegrees * maths.pi / 180
+        print(arcRadians / 2)
+        self.chartCanvas.create_arc((self.canvasWidth - 275, 90, self.canvasWidth - 25, 340), fill = "red", start = 90, extent = 360 - arcDegrees)
+        self.chartCanvas.create_arc((self.canvasWidth - 275, 90, self.canvasWidth - 25, 340), fill = "green", start = 450 - arcDegrees, extent = arcDegrees)
+        self.chartCanvas.create_text(self.canvasWidth - 150 + 75 * maths.cos((arcRadians - maths.pi) / 2), 215 + 75 * maths.sin((arcRadians - maths.pi) / 2), text = "Correct\n" + str(round(averageScore * 100)) + "%", justify = tk.CENTER)
+        self.chartCanvas.create_text(self.canvasWidth - 150 + 75 * maths.cos((maths.pi + arcRadians) / 2), 215 + 75 * maths.sin((maths.pi + arcRadians) / 2), text = "Incorrect\n" + str(round((1 - averageScore) * 100)) + "%", justify = tk.CENTER)
+        self.chartCanvas.create_text(self.canvasWidth - 150, 40, text = "All time questions correct")
     def unloadCharts(self) -> None:
         """This unloads the charts and goes back to the main statistics view."""
         # Destroying the elements

@@ -30,7 +30,7 @@ class MainWindowStates:
 
 class MainMenu(object):
     appName = "Quizzable"
-    appVersion = "v0.9"
+    appVersion = "v1"
     def __init__(self, tkobj: tk.Tk) -> None:
         """
         This method is called when MainMenu is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
@@ -129,9 +129,11 @@ class MainMenu(object):
         
         # The following lines configure the "grid", on which elements are placed, to adjust the sizes of the rows and columns.
         # This grid will have 3 columns and 8 rows.
+        # Column configuration:
         self.tk.grid_columnconfigure(0, weight = 2)
         self.tk.grid_columnconfigure(1, weight = 1)
         self.tk.grid_columnconfigure(2, weight = 2)
+        # Row configuration:
         self.tk.grid_rowconfigure(0, weight = 3)
         self.tk.grid_rowconfigure(1, weight = 2)
         self.tk.grid_rowconfigure(2, weight = 1)
@@ -176,14 +178,10 @@ class MainMenu(object):
         self.loginCreateUserButton.destroy()
         self.loginSelectUserButton.destroy()
         # Resetting the grid configuration.
-        self.tk.grid_rowconfigure(0, weight = 0)
-        self.tk.grid_rowconfigure(1, weight = 0)
-        self.tk.grid_rowconfigure(2, weight = 0)
-        self.tk.grid_rowconfigure(3, weight = 0)
-        self.tk.grid_rowconfigure(4, weight = 0)
-        self.tk.grid_rowconfigure(5, weight = 0)
-        self.tk.grid_rowconfigure(6, weight = 0)
-        self.tk.grid_rowconfigure(7, weight = 0)
+        for i in range(8):
+            # Resetting rows
+            self.tk.grid_rowconfigure(i, weight = 0)
+        # Resetting columns
         self.tk.grid_columnconfigure(0, weight = 0)
         self.tk.grid_columnconfigure(1, weight = 0)
         self.tk.grid_columnconfigure(2, weight = 0)
@@ -214,9 +212,11 @@ class MainMenu(object):
         This method loads the quiz browser screen onto the main window.
         It takes no arguments and doesn't return anything.
         """
+        # Changing the application state, which is tracked to prevent errors such as reloading the quiz list on the login screen.
         self.state = MainWindowStates.quizBrowser
-        # Configuring the window and the window grid. This grid has 4 rows and 4 columns.
+        # Changing the title of the window.
         self.tk.title("Quiz Browser - " + MainMenu.appName + " - " + MainMenu.appVersion)
+        # Configuring the window and the window grid. This grid has 4 rows and 4 columns.
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 40)
         self.tk.grid_rowconfigure(1, weight = 0, minsize = 40)
         self.tk.grid_rowconfigure(2, weight = 1)
@@ -238,14 +238,17 @@ class MainMenu(object):
         self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
         # The actual search bar. This will be tied to an event later which updates the search after each letter is typed.
         self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10)
+        # This binds any key press to launch the search algorithm 0.1 seconds after the user has pressed a key.
+        # It also starts it in another thread, to prevent the application lagging after every button press.
         self.quizBrowserSearchEntry.bind("<Key>", lambda e: threading.Timer(0.1, self.applyFilters).start())
         self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky = tk.W+tk.E)
         self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W+tk.E)
         
-        # Create a Quiz and Import a Quiz Buttons
+        # Create a Quiz, Import a Quiz, and view statistics Buttons
         self.createQuizButton = tk.Button(self.tk, text = "Create a Quiz", command = self.createQuizButtonCommand)
         self.importQuizButton = tk.Button(self.tk, text = "Import a Quiz", command = self.importQuizButtonCommand)
         self.statisticsViewButton = tk.Button(self.tk, text = "View statistics", command = self.launchStatistics)
+        # Positioning them in the top right of the window.
         self.createQuizButton.grid(row = 0, column = 2)
         self.importQuizButton.grid(row = 0, column = 3)
         self.statisticsViewButton.grid(row = 1, column = 3)
@@ -255,6 +258,7 @@ class MainMenu(object):
         self.filterBySubjectCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.subjectDictionary.values()])
         self.filterByDifficultyCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter", "1", "2", "3", "4", "5",
                                                     "2 and above", "3 and above", "4 and above", "2 and below", "3 and below", "4 and below"])
+        # Setting the default values for the filters.
         self.filterByExamBoardCombo.set("Filter by exam board")
         self.filterBySubjectCombo.set("Filter by subject")
         self.filterByDifficultyCombo.set("Filter by difficulty")
@@ -302,25 +306,32 @@ class MainMenu(object):
         self.quizListBoxSubject.grid(row = 1, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizListBoxExamBoard.grid(row = 1, column = 2, sticky = tk.W+tk.E+tk.N+tk.S)
         self.quizListBoxBestAttempt.grid(row = 1, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
-        # Bind selecting an entry on the list to the self.selectQuiz() method
+        # Bind selecting an entry on the list to the self.selectQuiz() method.
+        # It launches in a separate thread 0.1 seconds after clicking on the list, which is to prevent errors
+        # and stop the main thread from lagging.
         self.quizListBoxNames.bind("<Button-1>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxSubject.bind("<Button-1>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxExamBoard.bind("<Button-1>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxBestAttempt.bind("<Button-1>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
+        # Also bind it to pressing any key, in case that changes the selected quiz.
         self.quizListBoxNames.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxSubject.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxExamBoard.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         self.quizListBoxBestAttempt.bind("<Key>", lambda e: threading.Timer(0.1, self.selectQuiz).start())
         
+        # Refresh the list of quizzes, which in this case just populates the list for the first time.
         self.refreshList()
-        
+        # Position the frame on the window.
         self.quizListFrame.grid(row = 2, column = 0, columnspan = 3, rowspan = 2, sticky = tk.W+tk.E+tk.N+tk.S)
-        # End of lists frame.
-        self.loadSidePanel() # This loads the labels and buttons to the right of the main list.
+        # Then load the labels and buttons to the right of the main list, the "side panel".
+        self.loadSidePanel()
     
     def refreshList(self) -> None:
-        self.allQuizzes = [list(i) + [self.database.execute("SELECT * FROM `Results` WHERE `UserID` = ? AND `QuizID` = ? ORDER BY `Score` DESC;", float(self.currentUser.id), float(i[0]))]
+        """This method loads all the quizzes from the database and finds each one's best attempt - ready to be filtered, and searched."""
+        # For each quiz in the database, put it in a list of result rows and then add each quiz's best attempt by the currently selected user to the end of each row (not affecting the database).
+        self.allQuizzes = [list(i) + [self.database.execute("SELECT * FROM `Results` WHERE `UserID` = ? AND `QuizID` = ? ORDER BY `Score` DESC, `TotalDuration` ASC;", float(self.currentUser.id), float(i[0]))]
                                 for i in self.database.execute("SELECT * FROM `Quizzes`;")]
+        # With all the quizzes gathered from the database, reapply any filters and searches applied.
         self.applyFilters()
     
     def applyFilters(self, e = None) -> None:
@@ -423,7 +434,9 @@ class MainMenu(object):
                 self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
                 
                 if(i[7] and len(i[7])):
-                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + str(round(i[7][0][6], 1)) + "s")
+                    timeInSeconds = i[7][0][6]
+                    timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
+                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + timeTakenString)
                 else:
                     self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
         else:
@@ -442,7 +455,9 @@ class MainMenu(object):
                 self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
                 self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
                 if(i[7] and len(i[7])):
-                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + str(round(i[7][0][6], 1)) + "s")
+                    timeInSeconds = i[7][0][6]
+                    timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
+                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + timeTakenString)
                 else:
                     self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
         
@@ -467,7 +482,7 @@ class MainMenu(object):
         self.quizListSideExamboard.grid(row = 2, column = 0)
         self.quizListSideTotalQuestions.grid(row = 3, column = 0)
         self.quizListSideBestAttempt.grid(row = 4, column = 0)
-        # End of Frame
+        # Positioning the side panel itself.
         self.quizListSidePanel.grid(row = 2, column = 3, sticky=tk.W+tk.E+tk.N+tk.S)
         
         # The buttons to do actions on the currently selected quiz. These are contained in their own frame.
@@ -546,7 +561,7 @@ class MainMenu(object):
         self.quizListSideButtonFrame.destroy()
         self.quizListSidePanel.destroy()
     
-    def selectQuiz(self, *args) -> None:
+    def selectQuiz(self, *args) -> None: # TODO: more comments
         """This is run every time the user makes a change to the quiz currently selected in the list."""
         # This gets the currently selected entry in the list, as variable n
         n = -1
@@ -572,10 +587,12 @@ class MainMenu(object):
         numberOfQuestions = self.quizQuestionNumbers[self.currentlySelectedQuiz]
         self.quizListSideTotalQuestions.config(text = str(numberOfQuestions) + " question"
                                     + ("s" if numberOfQuestions != 1 else "") + " in this quiz.\nDifficulty: " + str(self.quizDifficulties[self.currentlySelectedQuiz]))
-        bestAttempt = self.database.execute("SELECT * FROM `Results` WHERE `UserID`=? AND `QuizID`=? ORDER BY `Score` DESC;",
+        bestAttempt = self.database.execute("SELECT * FROM `Results` WHERE `UserID`=? AND `QuizID`=? ORDER BY `Score` DESC, `TotalDuration` ASC;",
                                     float(self.currentUser.id), float(self.quizIDs[self.currentlySelectedQuiz]))
         if(bestAttempt and len(bestAttempt)):
-            self.quizListSideBestAttempt.config(text = "Best score: " + str(round(bestAttempt[0][3] * 100, 1)) + "%\nTime taken: " + str(round(bestAttempt[0][6], 1)) + "s")
+            timeInSeconds = bestAttempt[0][6]
+            timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
+            self.quizListSideBestAttempt.config(text = "Best score: " + str(round(bestAttempt[0][3] * 100, 1)) + "%\nTime taken: " + timeTakenString)
         else:
             self.quizListSideBestAttempt.config(text = "Not attempted yet.")
         # Re-enable all the buttons on the right
@@ -589,6 +606,7 @@ class MainMenu(object):
         This method is for adjusting the list, which gets called by the scrollbar every time the scrollbar is moved.
         This method is called by tkinter (the GUI module), so I can't control what arguments are entered.
         """
+        # Set all the lists' scroll positions.
         self.quizListBoxNames.yview(*args)
         self.quizListBoxSubject.yview(*args)
         self.quizListBoxExamBoard.yview(*args)
@@ -600,7 +618,9 @@ class MainMenu(object):
         and adjusts the other lists and the scrollbar based on how much is scrolled.
         This method is called by tkinter (the GUI module), so I can't control what arguments are entered.
         """
+        # Set the scroll bar position.
         self.quizListBoxScrollBar.set(args[0], args[1])
+        # Set all the lists' scroll positions.
         self.quizListBoxNames.yview("moveto", args[0])
         self.quizListBoxSubject.yview("moveto", args[0])
         self.quizListBoxExamBoard.yview("moveto", args[0])
@@ -722,10 +742,14 @@ class MainMenu(object):
         if(self.state != MainWindowStates.quizBrowser):
             # If the user isn't on the quiz browser, stop executing this subroutine.
             return
+        # Change the window's state.
         self.state = MainWindowStates.login
+        # Log the user out.
         self.currentUser = None
+        # Remove all the quiz browser's visual elements, except the menu along the top.
         self.unloadQuizBrowserScreen()
         self.unloadSidePanel()
+        # Then load the login screen again.
         self.loadLoginScreen()
     
     def launchStatistics(self) -> None:
@@ -735,12 +759,15 @@ class MainMenu(object):
             import statsGui
             statsGui.StatisticsDialog(self.tk, self)
         else:
+            # If the user isn't logged in, display an error.
             tkmb.showerror("User error", "No user currently selected, can't show user statistics.")
     
     def endApplication(self) -> None:
         """Called when the application is ending."""
         print("Application closing...")
+        # Change the state.
         self.state = MainWindowStates.closing
+        # Destroy the root window.
         self.tk.destroy()
 
 def startGUI() -> None:
