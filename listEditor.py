@@ -2,6 +2,8 @@ import tkinter as tk
 import tkinter.messagebox as tkmb
 import tkinter.simpledialog as tksd
 
+import re
+
 class ListEditor(object):
     def generateGUI(self, toplevel: tk.Tk, parent) -> None:
         """
@@ -79,7 +81,12 @@ class SubjectEditor(ListEditor):
         if(len(name) > 20):
             tkmb.showerror("Add subject error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
             return
-        # TODO: Check against regex, allowed: alphabet, numbers, spaces and hyphens.
+        # Regular expression to check if the name has any invalid characters.
+        nameRegex = re.compile('[^a-zA-Z0-9\.\- ]')
+        reducedName = nameRegex.sub("", name)
+        if(reducedName != name):
+            tkmb.showerror("Name error", "Name contains invalid characters, it should only contain english letters, numbers, spaces, dashes, or full stops/periods.", parent = self.window)
+            return
         for i in self.parent.subjectDictionary.values():
             # Check if the subject already exists in the database.
             if(i.lower() == name.lower()):
@@ -160,7 +167,12 @@ class ExamBoardEditor(ListEditor):
             tkmb.showerror("Add exam board error", "Name should be longer than 1 character.")
         if(len(name) > 20):
             tkmb.showerror("Add exam board error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
-        # TODO: Check against regex, allowed: alphabet, numbers, spaces and hyphens.
+        # Regular expression to check if the name has any invalid characters.
+        nameRegex = re.compile('[^a-zA-Z0-9\.\- ]')
+        reducedName = nameRegex.sub("", name)
+        if(reducedName != name):
+            tkmb.showerror("Name error", "Name contains invalid characters, it should only contain english letters, numbers, spaces, dashes, or full stops/periods.", parent = self.window)
+            return
         for i in self.parent.examboardDictionary.values():
             # Check if the exam board already exists in the database.
             if(i.lower() == name.lower()):
