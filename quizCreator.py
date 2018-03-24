@@ -4,6 +4,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
 import tkinter.messagebox as tkmb
+# Regular expressions are used for format checks.
 import re
 
 class QuizCreatorDialog(object):
@@ -163,7 +164,7 @@ class QuizCreatorDialog(object):
         """Gets all the details and questions and saves them in the database."""
         import quiz
         # Get the quiz details from the entry boxes.
-        title = self.nameString.get().strip()
+        title = self.nameString.get().strip() # .strip() removes whitespace from both ends of the string.
         subject = self.subjectString.get()
         examBoard = self.examBoardString.get()
         difficulty = self.difficultyString.get()
@@ -206,6 +207,7 @@ class QuizCreatorDialog(object):
             answer2 = self.questions[i][2].get()
             answer3 = self.questions[i][3].get()
             answer4 = self.questions[i][4].get()
+            # If answers have been entered, add them to the wrong answer list for that question.
             if(answer2):
                 otherAnswers.append(answer2)
             if(answer3):
@@ -231,24 +233,31 @@ class QuizCreatorDialog(object):
         examBoardID = None
         # It will only get them if the field has text in it, that isn't "None".
         if(subject):
+            # If the subject has been set, look up its ID.
             subjectID = self.parent.inverseSubjectDictionary.get(subject, None)
         if(subjectID != None):
+            # Convert it to a float to prevent errors with PyODBC in Python 3.3.
             subjectID = float(subjectID)
         
         if(examBoard):
+            # If the exam board has been set, look up its ID.
             examBoardID = self.parent.inverseExamboardDictionary.get(examBoard, None)
         if(examBoardID != None):
+            # Convert it to a float to prevent errors with PyODBC in Python 3.3.
             examBoardID = float(examBoardID)
         
-        # Check if any other quizzes have the same title. # TODO: Check if other quizzes have same hash.
-        quizzesWithSameTitle = self.parent.database.execute("SELECT * FROM `Quizzes` WHERE `QuizName`=?;", title)
+        # Check if any other quizzes have the same title.
+        quizzesWithSameTitle = self.parent.database.execute("SELECT * FROM `Quizzes` WHERE `QuizName` = ?;", title)
         if(len(quizzesWithSameTitle) > 0):
             tkmb.showerror("Quiz error", "Quiz name is already in use.", parent = self.window)
             return
         
+        # Create the quiz object, so we can generate a hash.
+        quizObject = quiz.Quiz(None, None, title, tags, int(subjectID) if subjectID else None, int(examBoardID) if examBoardID else None, difficulty, questions)
+        
         # Adding the quiz to the database, if all checks have passed.
-        self.parent.database.execute("INSERT INTO `Quizzes` (QuizName, SubjectID, ExamboardID, AmountOfQuestions, TagList, Difficulty)" +
-                                        "VALUES (?,?,?,?,?,?);", title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty))
+        self.parent.database.execute("INSERT INTO `Quizzes` (QuizName, SubjectID, ExamboardID, AmountOfQuestions, TagList, Difficulty, Hash)" +
+                                        "VALUES (?,?,?,?,?,?,?);", title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), quizObject.getHash(self.parent))
         
         # Getting the ID of the record that was just added.
         lastRecord = self.parent.database.execute("SELECT @@IDENTITY;")
@@ -264,7 +273,6 @@ class QuizCreatorDialog(object):
     
     def exit(self):
         """This function is run when the window is being closed without saving."""
-        # TODO: Check if user has entered data into the fields on the window.
         if(tkmb.askyesno("Close without saving", "Are you sure you want to exit? The quiz hasn't been saved. To save, click the 'Finish Quiz' button.", parent = self.window)):
             # The line above asks if the user is sure they want to exit with a popup yes/no dialog, if so then it closes the window with the line below.
             # If the user clicks 'No', then the prompt closes and nothing else happens.
@@ -300,17 +308,23 @@ class QuizEditorDialog(QuizCreatorDialog):
         self.finishButton.config(command = self.update)
         # For editing a quiz, all the original quiz data needs to be re-entered.
         self.fillInExistingData()
-        
         for i in self.quiz.questions:
+            # Add all the exisiting questions to the list.
             self.addQuestion(i)
     
     def fillInExistingData(self):
+        """As this is the quiz editor, this window must be loaded with a quiz, and this method fills in all the fields with data from that quiz."""
+        # Set the quiz title.
         self.nameString.set(self.quiz.name)
         if(self.quiz.subject):
+            # If the quiz has a subject, set it.
             self.subjectString.set(self.parent.subjectDictionary[self.quiz.subject])
         if(self.quiz.examBoard):
+            # If the quiz has an exam board, set it.
             self.examBoardString.set(self.parent.examboardDictionary[self.quiz.examBoard])
+        # Set the quiz difficulty.
         self.difficultyString.set(str(self.quiz.difficulty))
+        # Set the quiz tags.
         self.tagsString.set(",".join(self.quiz.tags))
         
     def addQuestion(self, currentQuestion):
@@ -342,12 +356,16 @@ class QuizEditorDialog(QuizCreatorDialog):
         correctAnswer.insert(0, currentQuestion.correctAnswer)
         answer2.insert(0, currentQuestion.otherAnswers[0])
         if(len(currentQuestion.otherAnswers) > 1):
+            # If there are more than 1 wrong answers, fill another one in.
             answer3.insert(0, currentQuestion.otherAnswers[1])
         if(len(currentQuestion.otherAnswers) > 2):
+            # If there are more than 2 wrong answers, fill another one in.
             answer4.insert(0, currentQuestion.otherAnswers[2])
         if(currentQuestion.hint):
+            # If the question has a hint, add it.
             hint.insert(0, currentQuestion.hint)
         if(currentQuestion.help):
+            # If the question has help, add it.
             help.insert(0, currentQuestion.help)
         
         # Adding the row of entries to the quiz dictionary, to keep references to the entry fields so the data inside them can be gathered when the quiz is saved.
@@ -400,6 +418,7 @@ class QuizEditorDialog(QuizCreatorDialog):
             answer2 = self.questions[i][2].get()
             answer3 = self.questions[i][3].get()
             answer4 = self.questions[i][4].get()
+            # If answers have been entered, add them to the wrong answer list for that question.
             if(answer2):
                 otherAnswers.append(answer2)
             if(answer3):
@@ -425,27 +444,31 @@ class QuizEditorDialog(QuizCreatorDialog):
         examBoardID = None
         # It will only get them if the field has text in it, that isn't "None".
         if(subject):
+            # If the subject has been set, look up its ID.
             subjectID = self.parent.inverseSubjectDictionary.get(subject, None)
         if(subjectID != None):
+            # Convert it to a float to prevent errors with PyODBC in Python 3.3.
             subjectID = float(subjectID)
         
         if(examBoard):
+            # If the exam board has been set, look up its ID.
             examBoardID = self.parent.inverseExamboardDictionary.get(examBoard, None)
         if(examBoardID != None):
+            # Convert it to a float to prevent errors with PyODBC in Python 3.3.
             examBoardID = float(examBoardID)
         
-        # Check if any other quizzes have the same title. # TODO: Check if other quizzes have same hash.
+        # Check if any other quizzes have the same title.
         quizzesWithSameTitle = self.parent.database.execute("SELECT * FROM `Quizzes` WHERE `QuizName`=?;", title)
         if(len(quizzesWithSameTitle) > 0 and quizzesWithSameTitle[0][0] != self.quiz.id):
             tkmb.showerror("Quiz error", "Quiz name is already in use.", parent = self.window)
             return
         
-        # Update the quiz record
+        # Update the quiz record.
         self.parent.database.execute("UPDATE `Quizzes` SET QuizName=?, SubjectID=?, ExamboardID=?, AmountOfQuestions=?, TagList=?, Difficulty=? WHERE QuizID=?;",
                                         title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), float(self.quiz.id))
         # Remove the old questions
         self.parent.database.execute("DELETE FROM `Questions` WHERE QuizID=?;", float(self.quiz.id))
-        # Add the new questions in
+        # Add the new questions to the database.
         for i in questions:
             i.quizID = self.quiz.id
             i.addToDatabase(self.parent.database)
@@ -457,7 +480,6 @@ class QuizEditorDialog(QuizCreatorDialog):
     
     def quit(self):
         """This function is run when the window is being closed without saving."""
-        # TODO: Check if fields have changed.
         if(tkmb.askyesno("Close without saving", "Are you sure you want to exit? The quiz hasn't been saved. To save, click the 'Finish Quiz' button.", parent = self.window)):
             # The line above asks if the user is sure they want to exit with a popup yes/no dialog, if so then it closes the window with the line below.
             # If the user clicks 'No', then the prompt closes and nothing else happens.

@@ -4,8 +4,9 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
 import tkinter.messagebox as tkmb
-
+# Maths module is used for the ceiling function.
 import math as maths
+# Threading is used for the secondary thread.
 import threading
 
 class ActiveQuizDialog(object):
@@ -135,28 +136,35 @@ class ActiveQuizDialog(object):
         self.timesTakenToAnswer = [None for i in range(len(self.quiz.questions))] # The time it took to answer each question, in seconds.
         self.totalDuration = None # The total duration of the quiz, in seconds.
         self.startTime = time.clock() # The time that the quiz started, in seconds.
-        wasPaused = False
-        self.paused = False
+        wasPaused = False # If the quiz was paused last iteration of the loop.
+        self.paused = False # This is changed by clicking the paused button, and indicates whether the quiz should be paused or not.
         while self.running:
             if(self.paused == True and wasPaused == True):
                 # The quiz is still paused.
+                # Wait 0.1 seconds before running through the loop again.
                 time.sleep(0.1)
+                # Account for the missed time in the variables.
                 self.totalPausedDuration += 0.1
                 currentQuestionStartTime += 0.1
+                # Then go through the loop again.
                 continue
             if(self.paused == True and wasPaused == False):
                 # Quiz has just been paused.
+                # Set the question text to "PAUSED".
                 self.questionLabel.config(text = "PAUSED")
+                # Disable the hint and help buttons.
                 self.hintButton.config(state = tk.DISABLED)
                 self.helpButton.config(state = tk.DISABLED)
                 for i in range(4):
                     # This disables all the buttons.
                     self.answerButtons[i].config(state = tk.DISABLED, text = "PAUSED")
+                # Indicate that the quiz was paused last iteration, and all the GUI has changed.
                 wasPaused = True
                 continue
             if(self.paused == False and wasPaused == True):
                 # Quiz has just been unpaused.
                 if(self.state == 0):
+                    # If the question is being answered.
                     self.questionLabel.config(text = self.quiz.questions[self.questionNumber].question)
                     answers, correctAnswer = self.quiz.questions[self.questionNumber].getShuffledAnswers()
                     for i in range(len(answers)):
@@ -170,6 +178,7 @@ class ActiveQuizDialog(object):
                     self.helpButton.config(state = tk.NORMAL if self.quiz.questions[self.questionNumber].help else tk.DISABLED)
                 else:
                     self.questionLabel.config(text = "Next question coming in a moment...")
+                # Indicate that the quiz was running last iteration of the loop.
                 wasPaused = False
             if(currentQuestion != self.questionNumber):
                 # A new question needs to be displayed
@@ -288,9 +297,12 @@ class ActiveQuizDialog(object):
     
     def unloadQuestionView(self) -> None:
         """This method removes all the buttons of the quiz, ready to display the end screen statistics."""
+        # Destroy the time limit label.
         self.timeLimitLabel.destroy()
         for i in self.answerButtons:
+            # Destroy each of the answer buttons.
             i.destroy()
+        # Destroy the four buttons on the right.
         self.hintButton.destroy()
         self.helpButton.destroy()
         self.pauseButton.destroy()
@@ -298,10 +310,15 @@ class ActiveQuizDialog(object):
     
     def loadFinishedView(self) -> None:
         """This method displays the end of quiz statistics, after the user has finished the quiz."""
+        # Show the text 'Quiz Completed!', centered.
         self.questionLabel.config(text = "Quiz Completed!", anchor = tk.CENTER)
+        # Show the number of correct answers out of the number of questions.
         self.scoreLabel = tk.Label(self.window, text = "Score: " + str(self.numberOfCorrectAnswers) + "/" + str(len(self.quiz.questions)), font = self.questionFont)
+        # Format the time taken to do the quiz.
         timeTakenString = (str(round(self.totalDuration // 60)) + "m " if self.totalDuration >= 60 else "") + (str(round((maths.ceil(self.totalDuration * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(self.totalDuration * 10) / 10) % 60, 1) else "")
+        # Show the time taken on the time taken label.
         self.timeLabel = tk.Label(self.window, text = "Time taken: " + timeTakenString, font = self.questionFont)
+        # Position the time taken label and the score label on the window.
         self.scoreLabel.grid(row = 3, column = 0)
         self.timeLabel.grid(row = 4, column = 0)
     

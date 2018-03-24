@@ -122,28 +122,36 @@ class StatisticsDialog(object):
                     quizName = self.parent.allQuizzes[j][1]
             # Add the score, time taken and name to the latest results list box.
             timeInSeconds = i[6]
+            # Format the time taken to complete the quiz.
             timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
+            # Add it to the visual list.
             self.latestResultsList.insert(tk.END, str(round(100 * i[3])) + "% - " + timeTakenString + " - " + quizName)
     
     def listQuizzesToRedo(self):
-        """
-        This lists the quizzes which have less than a 60% average score over the last three attempts.
-        """ # TODO: comment
+        """This lists the quizzes which have less than a 60% average score over the last three attempts."""
         quizAverages = {}
         self.reviewList = []
         for i in self.currentResults:
+            # For each result that has been fetched from the database.
             if(i[2] in quizAverages.keys()):
                 if(len(quizAverages[i[2]]) < 3):
+                    # Put the last three results in a two dimensional list.
                     quizAverages[i[2]].append(i[3])
             else:
+                # If the quiz hasn't been seen by this loop before, create a new list.
                 quizAverages[i[2]] = [i[3]]
         for i in quizAverages.keys():
+            # For each quiz that has results recorded
             if(sum(quizAverages[i]) / len(quizAverages[i]) < 0.6):
+                # If the average over the last three attempts at that quiz is less than 60%
                 for j in range(len(self.parent.allQuizzes)):
+                    # Find the name of that quiz.
                     if(self.parent.allQuizzes[j][0] == i):
                         quizName = self.parent.allQuizzes[j][1]
+                # Then add it to the list of quizzes needing redoing.
                 self.quizReviewList.insert(tk.END, quizName + " (Last 3 average: "
                         + str(round(100 * sum(quizAverages[i]) / len(quizAverages[i]))) + "%)")
+                # Then add it to the internal list, used by the redo button that launches based on the selected list element's index.
                 self.reviewList.append(i)
     
     def generateStatistics(self):
@@ -180,13 +188,10 @@ class StatisticsDialog(object):
         # then that result MOD 60 is the number of minutes into the hour it is.
         self.statisticsList.insert(tk.END, "Time of day: " + str(averageSecondsIntoDay // 3600) + ":" + str((averageSecondsIntoDay // 60) % 60))
         self.statisticsList.insert(tk.END, "")
-        # This SQL statement counts the number of distinct quizzes attempted by the user.
-        ### --- uniqueQuizzesAttempted = self.parent.database.execute("SELECT Count(*) AS `DistinctQuizzes` FROM (SELECT DISTINCT `QuizID` FROM `Results` WHERE `UserID` = ?);", float(self.parent.currentUser.id))[0][0]
         # Adding all-time statistics for the user.
         # Adding the statistics to the end of the list in the GUI.
         self.statisticsList.insert(tk.END, "All time statistics.")
         self.statisticsList.insert(tk.END, "No. of quiz attempts: " + str(len(self.currentResults)))
-        ### --- self.statisticsList.insert(tk.END, "No. of unique quizzes attempted: " + str(uniqueQuizzesAttempted))
         self.statisticsList.insert(tk.END, "")
         # Resetting the variables to be used to calculate all-time averages.
         # Average time isn't calculated for all-time, as it probably won't be any more interesting than the recent average time.
@@ -299,47 +304,86 @@ class StatisticsDialog(object):
         self.goBackToMainStatsButton.grid(row = 1, column = 1)
     
     def generateChartData(self) -> list:
-        scoreBands = [0]*11
+        """
+        This generates the data used by the charts.
+        Returns a list,
+        the first element is a list containing the number of results that fall in each percentage band from 0-9% to 90-99% and finally 100%
+        The second element is the all-time score average.
+        """
+        scoreBands = [0] * 11 # Create a list for each of the 
         totalScore = 0
         for i in self.currentResults:
+            # For each result, add one to the scoreBands list to the element which corresponds to the result's percentage band.
             scoreBands[maths.floor(i[3] * 10)] += 1
+            # Add the score to the total score.
             totalScore += i[3]
+        # Then return the scoreBands list and the all-time average score.
         return scoreBands, totalScore / len(self.currentResults)
     
     def linearlyInterpolateColours(colour1: list, colour2: list, ratio: float) -> list:
+        """
+        This function takes two RGB colours and linearly interpolates the colours depending on the ratio argument.
+        A ratio of 0 would return colour1.
+        A ratio of 1 would return colour2.
+        A ratio of 0.5 would return the average of colour1 and colour2.
+        A ratio of 0.2 would return a colour much closer to colour1 than colour2.
+        """
+        # Find the difference in each of the RGB values of the colours.
         colourDifference = [colour2[i] - colour1[i] for i in range(3)]
+        # Linearly interpolate between the colours RGB values depending on the ratio.
         return [round(colourDifference[i] * ratio + colour1[i]) for i in range(3)]
     
     def renderCharts(self) -> None:
         """Draws the shapes required to draw charts on the charts view."""
         print("Rendering charts")
-        self.chartCanvas.create_line(50, 10, 50, self.canvasHeight - 45)
-        barWidth = 30
-        barGap = 10
+        # Get the data for the charts.
         scoreBands, averageScore = self.generateChartData()
-        topBand = maths.ceil(max(scoreBands)/10) * 10
-        self.chartCanvas.create_line(50, self.canvasHeight - 45, 60 + 11*(barWidth+barGap), self.canvasHeight - 45)
+        # The score band chart.
+        barWidth = 30 # The width in pixels of each bar.
+        barGap = 10 # The gap size in pixels between each bar.
+        # Show the title of the chart.
         self.chartCanvas.create_text(55 + 5.5*(barWidth + barGap), 10, text = "Amount of quizzes completed in given percentage score bands")
+        # Work out the band with the highest amount of results, this will be used for working out how to scale the chart.
+        topBand = maths.ceil(max(scoreBands)/10) * 10
+        # Create the axes.
+        self.chartCanvas.create_line(50, 10, 50, self.canvasHeight - 45) # Vertical
+        self.chartCanvas.create_line(50, self.canvasHeight - 45, 60 + 11*(barWidth+barGap), self.canvasHeight - 45) # Horizontal
+        
         for i in range(11):
+            # On the vertical axis, put the scale in terms of number of quizzes.
             self.chartCanvas.create_text(25, 15 + i * (self.canvasHeight - 65)/10, text = str(round((1 - i/10)*topBand)))
-        print(scoreBands)
+        
         for i in range(11):
+            # For each percentage band:
+            # Work out the height and colour each bar should be. 0-9% gets a strong red and 100% gets a strong green.
             height = scoreBands[i] / topBand
             fillColour = "#%02x%02x%02x" % tuple(StatisticsDialog.linearlyInterpolateColours([220, 20, 60], [0, 238, 118], i/10))
+            # Draw the bar, using multiple mathematical expressions to work out the coordinates of the corners of the rectangle.
             self.chartCanvas.create_rectangle(60 + i*(barWidth+barGap), 9 + (1 - height) * (self.canvasHeight - 55), 60 + barWidth + i*(barWidth+barGap), self.canvasHeight - 45, fill = fillColour)
+            # Work out what text should be placed below the bar.
             barText = str(10*i) + "-\n" + str(10*(1+i)-1) + "%"
             if(i == 10):
+                # If it is the last bar, just set the text to "100%".
                 barText = "100%"
+            # Place the text beneath the bar.
             self.chartCanvas.create_text(60 + barWidth/2 + i*(barWidth+barGap), self.canvasHeight - 29, text = barText, justify = tk.CENTER)
         
-        arcDegrees = 360 * averageScore
-        arcRadians = arcDegrees * maths.pi / 180
-        print(arcRadians / 2)
-        self.chartCanvas.create_arc((self.canvasWidth - 275, 90, self.canvasWidth - 25, 340), fill = "red", start = 90, extent = 360 - arcDegrees)
-        self.chartCanvas.create_arc((self.canvasWidth - 275, 90, self.canvasWidth - 25, 340), fill = "green", start = 450 - arcDegrees, extent = arcDegrees)
-        self.chartCanvas.create_text(self.canvasWidth - 150 + 75 * maths.cos((arcRadians - maths.pi) / 2), 215 + 75 * maths.sin((arcRadians - maths.pi) / 2), text = "Correct\n" + str(round(averageScore * 100)) + "%", justify = tk.CENTER)
-        self.chartCanvas.create_text(self.canvasWidth - 150 + 75 * maths.cos((maths.pi + arcRadians) / 2), 215 + 75 * maths.sin((maths.pi + arcRadians) / 2), text = "Incorrect\n" + str(round((1 - averageScore) * 100)) + "%", justify = tk.CENTER)
+        # The pie chart.
+        # Show the chart title.
         self.chartCanvas.create_text(self.canvasWidth - 150, 40, text = "All time questions correct")
+        # Work out how many degrees the correct answer (green) arc should encompass, out of the 360 degrees in a circle.
+        arcDegrees = 360 * averageScore
+        # Convert it to radians to be used in trigonometic functions, for calculating where the text should be placed.
+        arcRadians = arcDegrees * maths.pi / 180
+        # Draw the red arc (% of wrong answers).
+        self.chartCanvas.create_arc((self.canvasWidth - 275, 90, self.canvasWidth - 25, 340), fill = "red", start = 90, extent = 360 - arcDegrees)
+        # Draw the green arc (% of correct answers).
+        self.chartCanvas.create_arc((self.canvasWidth - 275, 90, self.canvasWidth - 25, 340), fill = "green", start = 450 - arcDegrees, extent = arcDegrees)
+        # Put the percentage of correct answers as text in the middle of the green arc.
+        self.chartCanvas.create_text(self.canvasWidth - 150 + 75 * maths.cos((arcRadians - maths.pi) / 2), 215 + 75 * maths.sin((arcRadians - maths.pi) / 2), text = "Correct\n" + str(round(averageScore * 100)) + "%", justify = tk.CENTER)
+        # Put the percentage of incorrect answers as text in the middle of the red arc.
+        self.chartCanvas.create_text(self.canvasWidth - 150 + 75 * maths.cos((maths.pi + arcRadians) / 2), 215 + 75 * maths.sin((maths.pi + arcRadians) / 2), text = "Incorrect\n" + str(round((1 - averageScore) * 100)) + "%", justify = tk.CENTER)
+    
     def unloadCharts(self) -> None:
         """This unloads the charts and goes back to the main statistics view."""
         # Destroying the elements
@@ -366,7 +410,8 @@ class StatisticsDialog(object):
         """
         import quiz, quizGui
         if(not self.quizReviewList.curselection()):
-            tkmb.showerror("Redo quiz", "No quiz selected, please select a quiz from the right-most list.")
+            # If no quiz has been selected, show an error message.
+            tkmb.showerror("Redo quiz", "No quiz selected, please select a quiz from the right-most list.", parent = self.window)
             return
         index = self.quizReviewList.curselection()[0]
         quizID = self.reviewList[index]

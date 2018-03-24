@@ -14,7 +14,7 @@ import difflib
 import collections
 # Time is used to track how long each search/filter takes.
 import time
-import math as maths # This is absolutely required.
+import math as maths
 
 # This imports the database file from the same directory as this file.
 import database
@@ -31,6 +31,10 @@ class MainWindowStates:
 class MainMenu(object):
     appName = "Quizzable"
     appVersion = "v1"
+    # If you haven't seen the following method notation before, you can put a colon after a parameter name to indicate what type it should be.
+    # This type is not enforced, it is just to make it quickly understandable to anyone reading the code.
+    # The return type can follow a "->" after the close bracket but before the colon. This also isn't strictly enforced by Python,
+    # it is just for making it easier to understand when someone else is looking at the code.
     def __init__(self, tkobj: tk.Tk) -> None:
         """
         This method is called when MainMenu is initialised as a variable, and passes in tkobj e.g. "MainApp(app)"
@@ -335,55 +339,79 @@ class MainMenu(object):
         self.applyFilters()
     
     def applyFilters(self, e = None) -> None:
-        # TODO: Add more comments
+        """
+        This is run by the refreshList method, and by changing a filter or changing the text in the search bar.
+        The only argument is taken because triggering a method by an event other than clicking causes an event to be passed to the method,
+        that argument's default value is None and is not used.
+        """
         if(self.state != MainWindowStates.quizBrowser):
+            # If the window is not on the quiz browser, i.e. it is on the login screen, return here.
             return
         
+        # Record the time at which this method starts running.
         startTime = time.clock()
         
+        # Get the search query from the search bar.
         searchQuery = self.quizBrowserSearchEntry.get().lower()
+        # Get the values of the filters
         subjectText = self.filterBySubjectCombo.get()
         examBoardText = self.filterByExamBoardCombo.get()
         difficultyText = self.filterByDifficultyCombo.get()
-        
+        # Copy the list of all the quizzes, if the [:] is omitted, then the quizList variable just refrences the self.allQuizzes list.
         quizList = self.allQuizzes[:]
         if(not subjectText == "Filter by subject" and not subjectText == "No filter"):
+            # If the subject filter has been set:
             x = 0
+            # Get the subject ID.
             allowedSubject = self.inverseSubjectDictionary[subjectText]
             while x < len(quizList):
+                # Go through the list of quizzes, and remove those ones that don't match the subject filter.
                 if(quizList[x][2] != allowedSubject):
                     del quizList[x]
                 else:
                     x += 1
         if(not examBoardText == "Filter by exam board" and not examBoardText == "No filter"):
+            # If the exam board filter has been set:
             x = 0
+            # Get the exam board ID:
             allowedExamBoard = self.inverseExamboardDictionary[examBoardText]
             while x < len(quizList):
+                # Go through the list of quizzes, and remove those ones that don't match the exam board filter.
                 if(quizList[x][3] != allowedExamBoard):
                     del quizList[x]
                 else:
                     x += 1
         if(not difficultyText == "Filter by difficulty" and not difficultyText == "No filter"):
+            # If the difficulty filter has been set:
             if(len(difficultyText) == 1):
+                # And if the difficulty filter is just one difficulty, not a range:
                 x = 0
+                # Get the allowed difficulty.
                 allowedDifficulty = int(difficultyText[0])
                 while x < len(quizList):
+                    # Then go through the list of quizzes, and remove those ones that don't match the difficulty filter.
                     if(quizList[x][3] != allowedDifficulty):
                         del quizList[x]
                     else:
                         x += 1
             elif(difficultyText.endswith("above")):
+                # If the difficulty filter is a range with the word "above", e.g. "3 and above".
                 x = 0
+                # Find the minimum difficulty
                 allowedDifficulty = int(difficultyText[0])
                 while x < len(quizList):
+                    # Then go through the list of quizzes, and remove those ones that are below the minimum difficulty.
                     if(quizList[x][3] < allowedDifficulty):
                         del quizList[x]
                     else:
                         x += 1
             else:
+                # If the difficulty filter is a range with the word "below", e.g. "2 and below".
                 x = 0
+                # Get the maximum diffiuclty
                 allowedDifficulty = int(difficultyText[0])
                 while x < len(quizList):
+                    # Then go through the list of quizzes, and remove those ones that are above the maximum difficulty.
                     if(quizList[x][3] > allowedDifficulty):
                         del quizList[x]
                     else:
@@ -391,25 +419,36 @@ class MainMenu(object):
         
         # Ranking algorithm
         if(len(searchQuery.strip())):
+            # If there is text in the search bar that isn't white space:
+            # Split the query into a list of words, separated by spaces.
             searchWords = searchQuery.split(" ")
             quizRankings = {}
             for i in range(len(quizList)):
+                # For each quiz:
                 score = 0
                 for k in searchWords:
+                    if(not k):
+                        # If there is just a space with no word following, then ignore that word.
+                        continue
+                    # For each word in the search query:
                     for j in quizList[i][1].split(" "):
+                        # For each word in the quiz title, work out how similar the words are and add it to the score.
                         score += 2 * maths.pow(difflib.SequenceMatcher(None, k, j).ratio(), 3)
                         score += j.count(k)
                     for j in quizList[i][5].split(","):
+                        # Then go through the tags, and work out how similar the words are and add it to the score.
                         score += 2 * maths.pow(difflib.SequenceMatcher(None, k, j).ratio(), 4)
+                # Divide the score to remove the advantage of having a large number of words in the title and a large amount of tags.
                 quizRankings[i] = score / (1 + quizList[i][1].count(" ") + quizList[i][5].count(","))
+            # The counter is a way to order the quizzes by their scores easily.
             counter = collections.Counter(quizRankings)
         
-        # Clear the lists
+        # Clear the visual lists.
         self.quizListBoxNames.delete(0, tk.END)
         self.quizListBoxSubject.delete(0, tk.END)
         self.quizListBoxExamBoard.delete(0, tk.END)
         self.quizListBoxBestAttempt.delete(0, tk.END)
-
+        # Clear the behind-the-scenes lists.
         self.quizIDs = []
         self.quizNames = []
         self.quizSubjects = []
@@ -419,8 +458,11 @@ class MainMenu(object):
         self.quizTags = {}
         
         if(len(searchQuery.strip())):
+            # If there was a search query:
+            # Go through the list of quizzes in order of their scores and add each to the lists and behind-the-scenes lists.
             for j in counter.most_common(200):
                 i = quizList[j[0]]
+                # Add things to the behind-the-scenes lists.
                 self.quizIDs.append(i[0])
                 self.quizNames.append(i[1])
                 self.quizSubjects.append(i[2])
@@ -428,21 +470,27 @@ class MainMenu(object):
                 self.quizQuestionNumbers.append(i[4])
                 self.quizDifficulties.append(i[6])
                 self.quizTags[i[0]] = i[5].split(",") if i[5] else []
-                # This is adds each quiz to each of the lists.
+                # This is adds each quiz to each of the visual lists.
                 self.quizListBoxNames.insert(tk.END, i[1])
                 self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
                 self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
                 
-                if(i[7] and len(i[7])):
-                    timeInSeconds = i[7][0][6]
+                if(i[8] and len(i[8])):
+                    # If the user has attempted the quiz.
+                    timeInSeconds = i[8][0][6]
+                    # Calculate the time taken in minutes and seconds.
                     timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
-                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + timeTakenString)
+                    # Then add the score and the time taken to the best attempt column.
+                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[8][0][3] * 100, 1)) + "% - " + timeTakenString)
                 else:
+                    # If the user hasn't attempted the quiz, show "Not Attempted" in the best attempt column.
                     self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
         else:
+            # If there wasn't a search query:
             # This goes through each quiz in the database and adds it to these lists which will be used in searching/filtering.
-            for j in range(min(200, len(quizList))):
+            for j in range(min(200, len(quizList))): # A maximum of 200 records will be shown.
                 i = quizList[j]
+                # Add things to the behind-the-scenes lists.
                 self.quizIDs.append(i[0])
                 self.quizNames.append(i[1])
                 self.quizSubjects.append(i[2])
@@ -450,17 +498,21 @@ class MainMenu(object):
                 self.quizQuestionNumbers.append(i[4])
                 self.quizDifficulties.append(i[6])
                 self.quizTags[i[0]] = i[5].split(",") if i[5] else []
-                # This is adds each quiz to each of the lists.
+                # This is adds each quiz to each of the visual lists.
                 self.quizListBoxNames.insert(tk.END, i[1])
                 self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
                 self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
-                if(i[7] and len(i[7])):
-                    timeInSeconds = i[7][0][6]
+                if(i[8] and len(i[8])):
+                    # If the user has attempted the quiz.
+                    timeInSeconds = i[8][0][6]
+                    # Calculate the time taken in minutes and seconds.
                     timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
-                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[7][0][3] * 100, 1)) + "% - " + timeTakenString)
+                    # Then add the score and the time taken to the best attempt column.
+                    self.quizListBoxBestAttempt.insert(tk.END, str(round(i[8][0][3] * 100, 1)) + "% - " + timeTakenString)
                 else:
+                    # If the user hasn't attempted the quiz, show "Not Attempted" in the best attempt column.
                     self.quizListBoxBestAttempt.insert(tk.END, "Not Attempted")
-        
+        # Print to the console how long it took to filter, search, and sort the list of quizzes.
         print("Search and filter took: " + str(round(time.clock() - startTime, 3)) + "s")
     
     def loadSidePanel(self) -> None:
@@ -518,29 +570,29 @@ class MainMenu(object):
         self.tk.grid_columnconfigure(2, weight = 0)
         self.tk.grid_columnconfigure(3, weight = 0, minsize = 0)
         
-        # The search bar
+        # Removing the search bar.
         self.quizBrowserSearchLabel.destroy()
         self.quizBrowserSearchEntry.destroy()
-        # Create/import quiz buttons
+        # Removing the create/import quiz buttons.
         self.createQuizButton.destroy()
         self.importQuizButton.destroy()
-        # Filters
+        # Removing the filters.
         self.filterByExamBoardCombo.destroy()
         self.filterBySubjectCombo.destroy()
         self.filterByDifficultyCombo.destroy()
-        # The column headings for the synchronised lists.
+        # Removing the column headings for the synchronised lists.
         self.quizListLabelNames.destroy()
         self.quizListLabelSubject.destroy()
         self.quizListLabelExamBoard.destroy()
         self.quizListLabelBestAttempt.destroy()
-        # The scroll bar for the lists.
+        # Removing the scroll bar for the lists.
         self.quizListBoxScrollBar.destroy()
-        # The lists
+        # Removing the lists themselves.
         self.quizListBoxNames.destroy()
         self.quizListBoxSubject.destroy()
         self.quizListBoxExamBoard.destroy()
         self.quizListBoxBestAttempt.destroy()
-        # Removing widget frames
+        # Removing widget frames.
         self.quizBrowserSearchFrame.destroy()
         self.quizListFrame.destroy()
     
@@ -561,10 +613,11 @@ class MainMenu(object):
         self.quizListSideButtonFrame.destroy()
         self.quizListSidePanel.destroy()
     
-    def selectQuiz(self, *args) -> None: # TODO: more comments
+    def selectQuiz(self) -> None:
         """This is run every time the user makes a change to the quiz currently selected in the list."""
         # This gets the currently selected entry in the list, as variable n
         n = -1
+        # Get the currently selected list index, from which ever list has something selected.
         if(self.quizListBoxNames.curselection()):
             n = self.quizListBoxNames.curselection()[0]
         elif(self.quizListBoxSubject.curselection()):
@@ -575,27 +628,33 @@ class MainMenu(object):
             n = self.quizListBoxBestAttempt.curselection()[0]
         self.currentlySelectedQuiz = int(n)
         # This changes all the text labels on the right to the details of the currently selected quiz.
-        self.quizListSideName.config(text = self.quizNames[self.currentlySelectedQuiz])
-        if(self.quizSubjects[self.currentlySelectedQuiz]):
+        self.quizListSideName.config(text = self.quizNames[self.currentlySelectedQuiz]) # Showing the quiz title
+        if(self.quizSubjects[self.currentlySelectedQuiz]): # Showing the quiz subject
             self.quizListSideSubject.config(text = self.subjectDictionary[self.quizSubjects[self.currentlySelectedQuiz]])
         else:
-            self.quizListSideSubject.config(text = "")
-        if(self.quizExamboards[self.currentlySelectedQuiz]):
+            self.quizListSideSubject.config(text = "") # If there is no subject, set it to nothing.
+        if(self.quizExamboards[self.currentlySelectedQuiz]): # Showing the quiz exam board
             self.quizListSideExamboard.config(text = self.examboardDictionary[self.quizExamboards[self.currentlySelectedQuiz]])
         else:
-            self.quizListSideExamboard.config(text = "")
+            self.quizListSideExamboard.config(text = "") # If there is no exam board, set it to nothing.
         numberOfQuestions = self.quizQuestionNumbers[self.currentlySelectedQuiz]
+        # Show the number of questions and the diffiuclty on two lines within the same label.
         self.quizListSideTotalQuestions.config(text = str(numberOfQuestions) + " question"
                                     + ("s" if numberOfQuestions != 1 else "") + " in this quiz.\nDifficulty: " + str(self.quizDifficulties[self.currentlySelectedQuiz]))
+        # Find the best attempt for that quiz.
         bestAttempt = self.database.execute("SELECT * FROM `Results` WHERE `UserID`=? AND `QuizID`=? ORDER BY `Score` DESC, `TotalDuration` ASC;",
                                     float(self.currentUser.id), float(self.quizIDs[self.currentlySelectedQuiz]))
         if(bestAttempt and len(bestAttempt)):
+            # If a best attempt has been set,
             timeInSeconds = bestAttempt[0][6]
+            # Format the time it took to complete it.
             timeTakenString = (str(round(timeInSeconds // 60)) + "m " if timeInSeconds >= 60 else "") + (str(round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1)) + "s" if round((maths.ceil(timeInSeconds * 10) / 10) % 60, 1) else "")
+            # Show the best attempt's score and time taken.
             self.quizListSideBestAttempt.config(text = "Best score: " + str(round(bestAttempt[0][3] * 100, 1)) + "%\nTime taken: " + timeTakenString)
         else:
+            # If no best attempt has been set, tell the user.
             self.quizListSideBestAttempt.config(text = "Not attempted yet.")
-        # Re-enable all the buttons on the right
+        # Re-enable all the buttons on the right, in case this is the first time running this method.
         self.quizListSideLaunchQuizButton.config(state = tk.NORMAL)
         self.quizListSideEditQuizButton.config(state = tk.NORMAL)
         self.quizListSideExportQuizButton.config(state = tk.NORMAL)
@@ -659,7 +718,7 @@ class MainMenu(object):
         except IndexError:
             # If the quiz isn't found in the database.
             tkmb.showerror("Error", "The selected quiz wasn't found in the database.", parent = self.tk)
-        except Exception:
+        except:
             # If another error occurs.
             tkmb.showerror("Error", "The selected quiz is invalid or corrupt.", parent = self.tk)
     

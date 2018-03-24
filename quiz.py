@@ -147,40 +147,78 @@ class Quiz(object):
     
     def exportQuiz(self, parent, filename: str) -> None:
         """This will export the quiz into an XML file."""
+        # Create the quiz root element.
         root = et.Element("quiz")
+        # Place the meta tags in it.
         meta = et.SubElement(root, "meta")
+        # Within the meta tags, put the title tag.
         et.SubElement(meta, "title").text = self.name
         if(self.subject and self.subject != -1):
+            # If the quiz has a subject, put it in the subject tags as text.
             et.SubElement(meta, "subjectName").text = parent.subjectDictionary[self.subject]
         if(self.examBoard and self.examBoard != -1):
+            # If the quiz has an exam board, put it in the exam board tags as text.
             et.SubElement(meta, "examBoardName").text = parent.examboardDictionary[self.examBoard]
+        # Put the difficulty tag in the meta tags.
         et.SubElement(meta, "difficulty").text = str(self.difficulty)
         for i in self.questions:
+            # For each question,
+            # Make a question a child of the quiz element.
             question = et.SubElement(root, "question")
+            # Then add the question text as a child of the new question element.
             et.SubElement(question, "qtext").text = i.question
+            # As well as the correct answer.
             et.SubElement(question, "correctanswer").text = i.correctAnswer
             for j in i.otherAnswers:
+                # And then add the wrong answers.
                 et.SubElement(question, "wronganswer").text = j
+            # Then add the hint and help tags as children to the question.
             et.SubElement(question, "hint").text = i.hint
             et.SubElement(question, "help").text = i.help
-        def prettify(element, indent = "    "):
-            queue = [(0, element)]  # (level, element)
+        
+        if(not filename):
+            # If the file name has not been set, return the XML as a string.
+            # This is used by the hash function.
+            return et.tostring(root)
+        
+        # Defining a function within a method.
+        def prettifyXML(element, indent = "    "):
+            """Adds indentation and newlines to the XML document so it becomes easily readable."""
+            queue = [(0, element)]
             while queue:
+                # Going through each element in the tree,
                 level, element = queue.pop(0)
+                # Find the child elements of that element.
                 children = [(level + 1, child) for child in list(element)]
+                # Then add new lines and indentaion for each one.
                 if children:
                     element.text = "\n" + indent * (level + 1)  # for child open
                 if queue:
                     element.tail = "\n" + indent * queue[0][0]  # for sibling open
                 else:
                     element.tail = "\n" + indent * (level - 1)  # for parent close
-                queue[0:0] = children  # prepend so children come before siblings
-        prettify(root)
-        print(str(et.tostring(root))[2:-1].replace("\\n", "\n"))
+                # Then add the child elements to be processed too.
+                queue[0:0] = children
+        # Run the XML prettifier on the XML tree.
+        prettifyXML(root)
+        # Open the file to write to.
         file = open(filename, "w")
+        # Write the prettified XML to the file.
         file.write(str(et.tostring(root))[2:-1].replace("\\n", "\n"))
+        # Save the file.
         file.close()
+        # Show a message to the user telling them it has been successfully exported.
         tkmb.showinfo("Export Quiz", "Quiz successfully exported to XML, saved to: " + filename)
+    
+    def getHash(self, parent):
+        """This function gets the md5 hash of the XML export text of the quiz."""
+        import hashlib
+        # Create the md5 hasher.
+        md5 = hashlib.new("md5")
+        # Enter the XML.
+        md5.update(self.exportQuiz(parent, None))
+        # Return the hexadecimal format of the hash.
+        return md5.hexdigest()
     
     # Methods below are not executed on an object, but the Quiz class itself.
     # i.e. to use these methods you wouldn't need a Quiz object ( q = Quiz(args here); q.getQuiz(other args here) - this is wrong)
@@ -201,6 +239,7 @@ class Quiz(object):
             examboardID = record[3]
             amountOfQuestions = record[4]
             if(len(questionList) != amountOfQuestions):
+                # If the amount of questions found isn't equal to the amount of questions that the quiz record thinks it has, raise an error.
                 raise Exception("The number of questions in the quiz found doesn't match the expected amount of questions for that quiz.")
             tags = record[5].split(",") if record[5] else [] # This will generate a list of tags (they are comma-separated), and if there are no tags it will be an empty list.
             difficulty = record[6]
@@ -212,79 +251,122 @@ class Quiz(object):
         """
         This will import a quiz from an XML file and load it as a Quiz object.
         It will save it to the database by default.
-        """ # TODO: Comment
+        """
+        # Define the variables.
         tree = None
         root = None
         metadata = None
         title = None
         difficulty = None
         try:
+            # Parse the file.
             tree = et.parse(filename)
+            # Get the root quiz element.
             root = tree.getroot()
+            # Find the meta child element.
             metadata = root.find("meta")
+            # Get the title and difficulty elements' texts from the meta element.
             title = metadata.find("title").text
             difficulty = metadata.find("difficulty").text
         except AttributeError:
+            # If any of the above things couldn't be found, end the method.
             return "Invalid XML."
+        # Find the subject name.
         subject = metadata.find("subjectName")
         subjectID = -1
         if(subject != None):
+            # If the subject name is set,
             subject = subject.text
             found = False
+            # Go through each of the subjects in the database to see if any of the subjects match the one found.
             for i in parent.inverseSubjectDictionary.keys():
                 if(subject.lower() == i.lower()):
+                    # If one does, set the subjectID to the subjectID of the subject in the database.
                     subjectID = parent.inverseSubjectDictionary[i]
                     found = True
                     break
             if(not found):
+                # If the subject name isn't found, create the subject in the database, fetch its ID, and use that.
                 parent.database.execute("INSERT INTO `Subjects` (SubjectName) VALUES (?);", subject)
                 # This gets the inserted record's id.
                 subjectID = parent.database.execute("SELECT @@IDENTITY;")[0][0]
+                # Add the subject to the application's dictionaries.
                 parent.subjectDictionary[subjectID] = subject
                 parent.inverseSubjectDictionary[subject] = subjectID
                 print("Subject: " + subject + " added.")
+                if(parent.state == 2):
+                    # Reload the quiz browser, as the exam board filter now has a new option.
+                    parent.unloadQuizBrowserScreen()
+                    parent.unloadSidePanel()
+                    parent.loadQuizBrowserScreen()
         
+        # Find the exam board name.
         examBoard = metadata.find("examBoardName")
         examBoardID = -1
         if(examBoard != None):
+            # If the exam board name is set,
             examBoard = examBoard.text
             found = False
+            # Go through each of the exam boards in the database to see if any of the exam boards match the one found.
             for i in parent.inverseExamboardDictionary.keys():
                 if(examBoard.lower() == i.lower()):
+                    # If one does, set the examBoardID to the examBoardID of the exam board in the database.
                     examBoardID = parent.inverseExamboardDictionary[i]
                     found = True
                     break
             if(not found):
+                # If the exam board name isn't found, create the exam board in the database, fetch its ID, and use that.
                 parent.database.execute("INSERT INTO `Examboards` (EName) VALUES (?);", examBoard)
                 # This gets the inserted record's id.
                 examBoardID = parent.database.execute("SELECT @@IDENTITY;")[0][0]
+                # Add the exam board to the application's dictionaries.
                 parent.examboardDictionary[examBoardID] = examBoard
                 parent.inverseExamboardDictionary[examBoard] = examBoardID
                 print("Exam board: " + examBoard + " added.")
+                if(parent.state == 2):
+                    # Reload the quiz browser, as the exam board filter now has a new option.
+                    parent.unloadQuizBrowserScreen()
+                    parent.unloadSidePanel()
+                    parent.loadQuizBrowserScreen()
         
         tags = []
+        # Find the tag holder element.
         tagsElement = metadata.find("tags")
         if(tagsElement != None):
+            # if there is a tags element, find all the tag child elements.
             for i in tagsElement.findall("tag"):
+                # For each tag found, if it isn't blank
                 if(i != None and i.text.strip()):
+                    # Add the tag to the list.
                     tags.append(i.text.strip())
+        # Find all the question tags.
         questions = root.findall("question")
         questionList = []
         for i in questions:
+            # For each question element found,
             try:
+                # Get the title,
                 qtext = i.find("qtext").text
+                # the correct answer,
                 correctAnswer = i.find("correctanswer").text
+                # and the wrong answers.
                 wrongAnswers = [j.text for j in i.findall("wronganswer")]
             except AttributeError:
+                # If one of those three were missing from a question, stop the method execution.
                 return "Invalid question XML."
+            # Get the question's hint and help elements.
             hintElement = i.find("hint")
             helpElement = i.find("help")
+            # Get the text from the hint and help elements
             hint = hintElement.text if hintElement != None and hintElement.text else ""
             help = helpElement.text if helpElement != None and helpElement.text else ""
+            # Create the question object.
             question = Question(-1, qtext, correctAnswer, wrongAnswers, -1, hint, help)
             if(question.validate()):
+                # If the question is invalid, show an error and return.
                 tkmb.showerror("Question error", "Question \"" + qtext + "\": " + question.validate(), parent = parent.tk)
                 return
+            # Then add the question to the list.
             questionList.append(question)
         
         # VALIDATION
@@ -308,10 +390,19 @@ class Quiz(object):
         if(len(",".join(tags)) > 150):
             tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = parent.tk)
             return
+        # Creating a quiz object, so a hash can be generated.
+        quizObject = Quiz(None, None, title, tags, int(subjectID) if subjectID and subjectID != -1 else None, int(examBoardID) if examBoardID and examBoardID != -1 else None, difficulty, questionList)
+        quizHash = quizObject.getHash(parent)
+        # Check the database to see if an identical quiz is in there already.
+        queryResults = parent.database.execute("SELECT * FROM `Quizzes` WHERE `Hash` = ?;", quizHash)
+        if(len(queryResults)):
+            # The quiz is already in the database.
+            tkmb.showerror("Quiz error", "An identical quiz is already in the database.", parent = parent.tk)
+            return
         
         # Adding the quiz to the database, if all checks have passed.
-        parent.database.execute("INSERT INTO `Quizzes` (QuizName, SubjectID, ExamboardID, AmountOfQuestions, TagList, Difficulty)" +
-                                        "VALUES (?,?,?,?,?,?);", title, float(subjectID) if subjectID != -1 else None, float(examBoardID) if examBoardID != -1 else None, float(len(questions)), ",".join(tags), float(difficulty))
+        parent.database.execute("INSERT INTO `Quizzes` (QuizName, SubjectID, ExamboardID, AmountOfQuestions, TagList, Difficulty, Hash)" +
+                                        "VALUES (?,?,?,?,?,?,?);", title, float(subjectID) if subjectID != -1 else None, float(examBoardID) if examBoardID != -1 else None, float(len(questions)), ",".join(tags), float(difficulty), quizHash)
         
         # Getting the ID of the record that was just added.
         lastRecord = parent.database.execute("SELECT @@IDENTITY;")
@@ -320,5 +411,6 @@ class Quiz(object):
             # For each question, give it the Quiz's ID, and then add it to the database.
             i.quizID = quizID
             i.addToDatabase(parent.database)
+        # If the quiz has been successfully imported, show the user a message.
         tkmb.showinfo("Quiz import", "Quiz \"" + title + "\" has been successfully imported.", parent = parent.tk)
         parent.refreshList()
