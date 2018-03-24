@@ -109,16 +109,20 @@ class ActiveQuizDialog(object):
             self.currentState = 1
     
     def showHint(self):
+        """This displays a hint to the user, if the question has one."""
         if(self.quiz.questions[self.questionNumber].hint):
             tkmb.showinfo("Hint", self.quiz.questions[self.questionNumber].hint, parent = self.window)
     
     def showHelp(self):
+        """This displays help to the user, if the question has it."""
         if(self.quiz.questions[self.questionNumber].help):
+            # If they open the help, mark the question as wrong.
             self.theirAnswer = 4
             self.currentState = 1
             tkmb.showinfo("Help", self.quiz.questions[self.questionNumber].help, parent = self.window)
     
     def pause(self):
+        """This toggles the pause state of the quiz."""
         self.paused = not self.paused
     
     def quizThread(self):
