@@ -336,6 +336,10 @@ class StatisticsDialog(object):
     def renderCharts(self) -> None:
         """Draws the shapes required to draw charts on the charts view."""
         print("Rendering charts")
+        if(len(self.currentResults) == 0):
+            # If there are no results, show a message and cancel method execution.
+            self.chartCanvas.create_text(100, 10, text = "No data to generate charts with.")
+            return
         # Get the data for the charts.
         scoreBands, averageScore = self.generateChartData()
         # The score band chart.

@@ -332,6 +332,9 @@ class MainMenu(object):
     
     def refreshList(self) -> None:
         """This method loads all the quizzes from the database and finds each one's best attempt - ready to be filtered, and searched."""
+        if(self.state != MainWindowStates.quizBrowser):
+            # If the quiz browser isn't open, don't referesh the quiz list.
+            return
         # For each quiz in the database, put it in a list of result rows and then add each quiz's best attempt by the currently selected user to the end of each row (not affecting the database).
         self.allQuizzes = [list(i) + [self.database.execute("SELECT * FROM `Results` WHERE `UserID` = ? AND `QuizID` = ? ORDER BY `Score` DESC, `TotalDuration` ASC;", float(self.currentUser.id), float(i[0]))]
                                 for i in self.database.execute("SELECT * FROM `Quizzes`;")]
@@ -390,7 +393,7 @@ class MainMenu(object):
                 allowedDifficulty = int(difficultyText[0])
                 while x < len(quizList):
                     # Then go through the list of quizzes, and remove those ones that don't match the difficulty filter.
-                    if(quizList[x][3] != allowedDifficulty):
+                    if(quizList[x][6] != allowedDifficulty):
                         del quizList[x]
                     else:
                         x += 1
@@ -401,7 +404,7 @@ class MainMenu(object):
                 allowedDifficulty = int(difficultyText[0])
                 while x < len(quizList):
                     # Then go through the list of quizzes, and remove those ones that are below the minimum difficulty.
-                    if(quizList[x][3] < allowedDifficulty):
+                    if(quizList[x][6] < allowedDifficulty):
                         del quizList[x]
                     else:
                         x += 1
@@ -412,7 +415,7 @@ class MainMenu(object):
                 allowedDifficulty = int(difficultyText[0])
                 while x < len(quizList):
                     # Then go through the list of quizzes, and remove those ones that are above the maximum difficulty.
-                    if(quizList[x][3] > allowedDifficulty):
+                    if(quizList[x][6] > allowedDifficulty):
                         del quizList[x]
                     else:
                         x += 1
@@ -559,7 +562,11 @@ class MainMenu(object):
         self.quizListSideButtonFrame.grid(row = 3, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
     
     def unloadQuizBrowserScreen(self) -> None:
-        """This removes all the widgets off the quiz browser screen, in case the login screen needs to be displayed, or potentially the quiz browser needs to re-load."""
+        """
+        This removes all the widgets off the quiz browser screen,
+        in case the login screen needs to be displayed,
+        or potentially the quiz browser needs to re-load.
+        """
         # Resetting the grid configuration.
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 0)
         self.tk.grid_rowconfigure(1, weight = 0, minsize = 0)
@@ -576,6 +583,7 @@ class MainMenu(object):
         # Removing the create/import quiz buttons.
         self.createQuizButton.destroy()
         self.importQuizButton.destroy()
+        self.statisticsViewButton.destroy()
         # Removing the filters.
         self.filterByExamBoardCombo.destroy()
         self.filterBySubjectCombo.destroy()

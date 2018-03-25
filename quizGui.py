@@ -167,7 +167,7 @@ class ActiveQuizDialog(object):
                 continue
             if(self.paused == False and wasPaused == True):
                 # Quiz has just been unpaused.
-                if(self.state == 0):
+                if(self.currentState == 0):
                     # If the question is being answered.
                     self.questionLabel.config(text = self.quiz.questions[self.questionNumber].question)
                     answers, correctAnswer = self.quiz.questions[self.questionNumber].getShuffledAnswers()
@@ -201,7 +201,7 @@ class ActiveQuizDialog(object):
                     # This recolours and re-enables buttons, as after each question the font colour of each button changes, and some buttons may be disabled.
                     self.answerButtons[i].config(text = answers[i], fg = "black", bg = "SystemButtonFace")
                     self.answerButtons[i].config(state = tk.NORMAL)
-                for i in range(4, len(answers), -1):
+                for i in range(3, len(answers) - 1, -1):
                     # This disables buttons if there is less than four answers for a given question.
                     self.answerButtons[i].config(state = tk.DISABLED, text = "")
                 self.hintButton.config(state = tk.NORMAL if self.quiz.questions[self.questionNumber].hint else tk.DISABLED)

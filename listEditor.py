@@ -103,6 +103,10 @@ class SubjectEditor(ListEditor):
         # Then add the subject to the end of the list on screen and add it to the mapping.
         self.listView.insert(tk.END, name)
         self.subjectMapping.append(id)
+        if(self.parent.state == 2):
+            # Reload the quiz browser
+            self.parent.unloadQuizBrowserScreen()
+            self.parent.loadQuizBrowserScreen()
     
     def remove(self) -> None:
         """
@@ -131,8 +135,10 @@ class SubjectEditor(ListEditor):
         subjectName = self.parent.subjectDictionary[subjectID]
         del self.parent.subjectDictionary[subjectID]
         del self.parent.inverseSubjectDictionary[subjectName]
-        # Reload the quiz browser
-        self.parent.refreshList()
+        if(self.parent.state == 2):
+            # Reload the quiz browser
+            self.parent.unloadQuizBrowserScreen()
+            self.parent.loadQuizBrowserScreen()
 
 class ExamBoardEditor(ListEditor):
     def __init__(self, toplevel: tk.Tk, parent) -> None:
@@ -189,6 +195,10 @@ class ExamBoardEditor(ListEditor):
         # Then add it to the end of the list and to the exam board mapping.
         self.listView.insert(tk.END, name)
         self.examBoardMapping.append(id)
+        if(self.parent.state == 2):
+            # Reload the quiz browser
+            self.parent.unloadQuizBrowserScreen()
+            self.parent.loadQuizBrowserScreen()
     
     def remove(self) -> None:
         """
@@ -204,7 +214,7 @@ class ExamBoardEditor(ListEditor):
         if(not(index and index >= 0 and index < len(self.examBoardMapping))):
             return
         # Get the exam board ID from the exam board-listview list.
-        examBoardID = self.subjectMapping[index]
+        examBoardID = self.examBoardMapping[index]
         # Unbind all quizzes that are bound to the exam board being deleted.
         self.parent.database.execute("UPDATE `Quizzes` SET ExamboardID = null WHERE ExamboardID = ?;", float(examBoardID))
         # Then delete the exam board itself.
@@ -212,10 +222,12 @@ class ExamBoardEditor(ListEditor):
         # Remove the exam board from the list.
         self.listView.delete(index)
         # Remove the exam board from the mapping.
-        del self.examBoardMapping[examBoardID]
+        del self.examBoardMapping[index]
         # Remove it from the exam board dictionaries.
         examBoardName = self.parent.examboardDictionary[examBoardID]
         del self.parent.examboardDictionary[examBoardID]
         del self.parent.inverseExamboardDictionary[examBoardName]
-        # Reload the quiz browser
-        self.parent.refreshList()
+        if(self.parent.state == 2):
+            # Reload the quiz browser
+            self.parent.unloadQuizBrowserScreen()
+            self.parent.loadQuizBrowserScreen()

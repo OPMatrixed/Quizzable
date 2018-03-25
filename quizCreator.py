@@ -188,7 +188,7 @@ class QuizCreatorDialog(object):
             return
         # Length check on tag entry.
         if(len(tags) > 150):
-            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = self.window)
+            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(tags)) + ").", parent = self.window)
             return
         # Reformatting tags in case the user hasn't entered in the correct format, by removing all whitespace that would be adjacent to a comma.
         tagList = []
@@ -221,7 +221,7 @@ class QuizCreatorDialog(object):
             errorText = q.validate()
             if(errorText):
                 # If it's invalid, show an error, and then return.
-                tkmb.showerror("Question error", "Question (\"" + errorText + "\") has error: " + errorText, parent = self.window)
+                tkmb.showerror("Question error", "Question (\"" + questionText + "\") has error: " + errorText, parent = self.window)
                 return
             questions.append(q)
         # If there are less than 2 questions, show an error, and the return.
@@ -399,7 +399,7 @@ class QuizEditorDialog(QuizCreatorDialog):
             return
         # Length check on tag entry.
         if(len(tags) > 150):
-            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = self.window)
+            tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(tags)) + ").", parent = self.window)
             return
         # Reformatting tags in case the user hasn't entered in the correct format, by removing all whitespace that would be adjacent to a comma.
         tagList = []
@@ -432,7 +432,7 @@ class QuizEditorDialog(QuizCreatorDialog):
             errorText = q.validate()
             if(errorText):
                 # If it's invalid, show an error, and then return.
-                tkmb.showerror("Question error", "Question (\"" + errorText + "\") has error: " + errorText, parent = self.window)
+                tkmb.showerror("Question error", "Question (\"" + questionText + "\") has error: " + errorText, parent = self.window)
                 return
             questions.append(q)
         # If there are less than 2 questions, show an error, and the return.
@@ -463,9 +463,12 @@ class QuizEditorDialog(QuizCreatorDialog):
             tkmb.showerror("Quiz error", "Quiz name is already in use.", parent = self.window)
             return
         
+        # Create the quiz object, so we can generate a hash.
+        quizObject = quiz.Quiz(None, None, title, tags, int(subjectID) if subjectID else None, int(examBoardID) if examBoardID else None, difficulty, questions)
+        
         # Update the quiz record.
-        self.parent.database.execute("UPDATE `Quizzes` SET QuizName=?, SubjectID=?, ExamboardID=?, AmountOfQuestions=?, TagList=?, Difficulty=? WHERE QuizID=?;",
-                                        title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), float(self.quiz.id))
+        self.parent.database.execute("UPDATE `Quizzes` SET QuizName = ?, SubjectID = ?, ExamboardID = ?, AmountOfQuestions = ?, TagList = ?, Difficulty = ?, Hash = ? WHERE QuizID = ?;",
+                                        title, subjectID, examBoardID, float(len(questions)), tags, float(difficulty), quizObject.getHash(self.parent), float(self.quiz.id))
         # Remove the old questions
         self.parent.database.execute("DELETE FROM `Questions` WHERE QuizID=?;", float(self.quiz.id))
         # Add the new questions to the database.

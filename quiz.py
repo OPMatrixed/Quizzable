@@ -270,7 +270,10 @@ class Quiz(object):
             difficulty = metadata.find("difficulty").text
         except AttributeError:
             # If any of the above things couldn't be found, end the method.
-            return "Invalid XML."
+            return tkmb.showerror("Import error", "Invalid quiz XML file.", parent = parent.tk)
+        except et.ParseError:
+            # If any of the above things couldn't be found, end the method.
+            return tkmb.showerror("Import error", "Invalid quiz XML file.", parent = parent.tk)
         # Find the subject name.
         subject = metadata.find("subjectName")
         subjectID = -1
