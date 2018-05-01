@@ -1,3 +1,5 @@
+"""This file contains the code for interacting with the database. Only one DatabaseManager object will be created by the application to interact with the database."""
+
 # Imports os.path to make a file path relative to this file.
 import os.path
 # This is the library that requires installation and doesn't come with python.
@@ -40,5 +42,7 @@ class DatabaseManager(object):
     
     def dispose(self) -> None:
         """Run when this object needs to be destroyed, usually on application exit."""
+        # This closes the database connection, applying the changes that have been made in the transaction file to the master file.
         self.dbcon.close()
+        # Log this to the console, for debugging purposes.
         print("Database connection closed.")

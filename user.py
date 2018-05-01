@@ -1,6 +1,7 @@
-# This file contains the User class
-# The User class holds the data on a user that has just been created or loaded from the database.
-# The class handles saving/loading users from database, changing user settings, and creating new users.
+"""This file contains the User class
+The User class holds the data on a user that has just been created or loaded from the database.
+The class handles saving/loading users from database, changing user settings, and creating new users.
+"""
 
 class User(object):
     def __init__(self, databaseManager, id: int, username: str, timeConfig: int, defaultExamBoard: int) -> None:

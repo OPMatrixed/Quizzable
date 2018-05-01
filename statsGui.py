@@ -1,10 +1,13 @@
-# This file will handle the statistics window, which is accessed from the top menu and the quiz browser.
-# This window will switch between statistics view and charts view, both of these are specified on the design document.
+"""
+This file will handle the statistics window, which is accessed from the top menu and the quiz browser.
+This window will switch between statistics view and charts view, both of these are specified on the design document.
+"""
 
+# TkInter is used for GUI subroutines and classes.
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.messagebox as tkmb
-
+# Maths module was used for rounding and power functions.
 import math as maths
 
 class StatisticsDialog(object):
@@ -26,6 +29,7 @@ class StatisticsDialog(object):
         self.window.title("Statistics - Quizzable")
         # The current state of the window. Stats = 0, Charts = 1
         self.currentState = 0
+        # Load the main statistics view.
         self.loadMainStats()
     
     def loadMainStats(self) -> None:
@@ -39,14 +43,17 @@ class StatisticsDialog(object):
         self.window.grid_rowconfigure(1, weight = 1)
         
         # The filter comboboxes and apply button that fit on the first row.
+        # The subjects and exam boards for the drop-down must be fetched from the application dictionaries.
         self.filterBySubjectComboBox = ttk.Combobox(self.window, state = "readonly", values = ["No filter"] + [i for i in self.parent.subjectDictionary.values()])
         self.filterByExamBoardComboBox = ttk.Combobox(self.window, state = "readonly", values = ["No filter"] + [i for i in self.parent.examboardDictionary.values()])
+        # The options for the difficulty drop-down are hard coded because the user can't create their own difficulty levels.
         self.filterByDifficultyComboBox = ttk.Combobox(self.window, state = "readonly", values = ["No filter", "1", "2", "3", "4", "5"])
+        # Creating the button that applies the selected filters.
         self.applyFiltersButton = tk.Button(self.window, text = "Apply filters", command = self.applyFilters)
         # Postitioning for the comboboxes and the button.
-        self.filterBySubjectComboBox.grid(row = 0, column = 0, sticky = tk.W+tk.E)
-        self.filterByExamBoardComboBox.grid(row = 0, column = 1, sticky = tk.W+tk.E)
-        self.filterByDifficultyComboBox.grid(row = 0, column = 2, sticky = tk.W+tk.E)
+        self.filterBySubjectComboBox.grid(row = 0, column = 0, sticky = tk.W + tk.E)
+        self.filterByExamBoardComboBox.grid(row = 0, column = 1, sticky = tk.W + tk.E)
+        self.filterByDifficultyComboBox.grid(row = 0, column = 2, sticky = tk.W + tk.E)
         self.applyFiltersButton.grid(row = 0, column = 3)
         # For the rest of the window, I have decided to put it all in a six-column, three-row frame,
         # and this will be spread over all four columns and sit on the bottom row of the window it is sitting on.
@@ -68,15 +75,15 @@ class StatisticsDialog(object):
         self.latestResultsList = tk.Listbox(self.statsFrame)
         self.statisticsList = tk.Listbox(self.statsFrame)
         self.quizReviewList = tk.Listbox(self.statsFrame)
-        # Scroll bars
+        # The scroll bars for the lists
         self.latestResultsScroll = tk.Scrollbar(self.statsFrame, command = self.latestResultsList.yview)
         self.statisticsScroll = tk.Scrollbar(self.statsFrame, command = self.statisticsList.yview)
         self.quizReviewScroll = tk.Scrollbar(self.statsFrame, command = self.quizReviewList.yview)
-        
+        # Binding the lists to the scroll bar, in case the user uses the scroll wheel, then the scroll bar must have its position updated.
         self.latestResultsList.config(yscrollcommand = self.latestResultsScroll.set)
         self.statisticsList.config(yscrollcommand = self.statisticsScroll.set)
         self.quizReviewList.config(yscrollcommand = self.quizReviewScroll.set)
-        # Buttons
+        # Buttons for viewing the charts view and redoing quizzes.
         self.viewChartsButton = tk.Button(self.statsFrame, text = "View charts", padx = 30, pady = 3, command = self.unloadMainStats)
         self.redoQuizButton = tk.Button(self.statsFrame, text = "Redo quiz", padx = 30, pady = 3, command = self.redoQuiz)
         
@@ -84,12 +91,15 @@ class StatisticsDialog(object):
         self.latestResultsLabel.grid(row = 0, column = 0, columnspan = 2)
         self.statisticsLabel.grid(row = 0, column = 2, columnspan = 2)
         self.quizReviewLabel.grid(row = 0, column = 4, columnspan = 2)
+        # The lists use sticky = , because they must take up as much space as they can within their grid cell.
         self.latestResultsList.grid(row = 1, column = 0, rowspan = 2, sticky = tk.N+tk.S+tk.E+tk.W)
         self.statisticsList.grid(row = 1, column = 2, sticky = tk.N+tk.S+tk.E+tk.W)
         self.quizReviewList.grid(row = 1, column = 4, sticky = tk.N+tk.S+tk.E+tk.W)
+        # The scroll bars must take as much vertical space as they can take within their row(s).
         self.latestResultsScroll.grid(row = 1, column = 1, rowspan = 2, sticky = tk.N+tk.S)
         self.statisticsScroll.grid(row = 1, column = 3, sticky = tk.N+tk.S)
         self.quizReviewScroll.grid(row = 1, column = 5, sticky = tk.N+tk.S)
+        # The positioning of the view charts and redo quiz buttons.
         self.viewChartsButton.grid(row = 2, column = 2, columnspan = 2)
         self.redoQuizButton.grid(row = 2, column = 4, columnspan = 2)
         
@@ -310,7 +320,7 @@ class StatisticsDialog(object):
         the first element is a list containing the number of results that fall in each percentage band from 0-9% to 90-99% and finally 100%
         The second element is the all-time score average.
         """
-        scoreBands = [0] * 11 # Create a list for each of the 
+        scoreBands = [0] * 11 # Create a list for each of the score bands.
         totalScore = 0
         for i in self.currentResults:
             # For each result, add one to the scoreBands list to the element which corresponds to the result's percentage band.
@@ -335,6 +345,7 @@ class StatisticsDialog(object):
     
     def renderCharts(self) -> None:
         """Draws the shapes required to draw charts on the charts view."""
+        # Log to the console that charts are beginning to render.
         print("Rendering charts")
         if(len(self.currentResults) == 0):
             # If there are no results, show a message and cancel method execution.
@@ -412,12 +423,15 @@ class StatisticsDialog(object):
         This is called when the user clicks the "Redo Quiz" button.
         It will open the quiz window with the currently selected quiz on this window.
         """
+        # Import the quiz and quizGui files from the application's base directory.
         import quiz, quizGui
         if(not self.quizReviewList.curselection()):
             # If no quiz has been selected, show an error message.
             tkmb.showerror("Redo quiz", "No quiz selected, please select a quiz from the right-most list.", parent = self.window)
             return
+        # Get the currently selected list index.
         index = self.quizReviewList.curselection()[0]
+        # Find the quiz ID for the selected list index.
         quizID = self.reviewList[index]
         # This loads the quiz from the database, the method .getQuiz() returns a Quiz object.
         quizObj = quiz.Quiz.getQuiz(quizID, self.parent.database)

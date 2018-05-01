@@ -1,7 +1,10 @@
+"""The list editor file holds the general code for list editors, as well as the more specific code for the subject and exam board list editor child classes."""
+
+# TkInter used for GUI subroutines and classes.
 import tkinter as tk
 import tkinter.messagebox as tkmb
 import tkinter.simpledialog as tksd
-
+# Regular expressions are used for format checks.
 import re
 
 class ListEditor(object):
@@ -53,12 +56,17 @@ class SubjectEditor(ListEditor):
         toplevel is the tkinter object of the parent window.
         parent in the MainApp object, unless another dialog opens this window.
         """
+        # Run the parent method to create the base window, which will be modified to be tuned to be specifically for modifying subjects.
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Subject List Editor")
+        # Creating the "subjectMapping", which is a list which links each index of the list to the SubjectID in the database.
+        # This is necessary because when the code checks what has been selected, it finds a list index rather than a subject ID.
         self.subjectMapping = []
         for i in self.parent.inverseSubjectDictionary.keys():
+            # For each subject in the database, add it to the end of the list.
             self.listView.insert(tk.END, i)
+            # And, add it to the subject mapping.
             self.subjectMapping.append(self.parent.inverseSubjectDictionary[i])
     
     def add(self) -> None:
@@ -74,22 +82,27 @@ class SubjectEditor(ListEditor):
             return
         # Remove whitespace characters from both ends of the string, if they are there.
         name = name.strip()
-        # Length check, show an error message if too short or too long.
+        # Length check.
         if(len(name) < 2):
+            # If the subject name is too short, reject it and show an error message.
             tkmb.showerror("Add subject error", "Name should be longer than 1 character.")
             return
         if(len(name) > 20):
+            # If the subject name is too long, reject it and show an error message.
             tkmb.showerror("Add subject error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
             return
         # Regular expression to check if the name has any invalid characters.
         nameRegex = re.compile('[^a-zA-Z0-9\.\- ]')
+        # Run the regular expression on the name of the subject.
         reducedName = nameRegex.sub("", name)
         if(reducedName != name):
+            # If running the regular expression changes the name string, it must have invalid characters and so the format check has failed. Show an error message to the user.
             tkmb.showerror("Name error", "Name contains invalid characters, it should only contain english letters, numbers, spaces, dashes, or full stops/periods.", parent = self.window)
             return
         for i in self.parent.subjectDictionary.values():
             # Check if the subject already exists in the database.
             if(i.lower() == name.lower()):
+                # If the subject already exists, show an error to the user.
                 tkmb.showerror("Add subject error", "Subject already exists in the list.")
                 return
         # If all the other checks pass, add the subject to the dictionary.
@@ -104,7 +117,7 @@ class SubjectEditor(ListEditor):
         self.listView.insert(tk.END, name)
         self.subjectMapping.append(id)
         if(self.parent.state == 2):
-            # Reload the quiz browser
+            # Reload the quiz browser, if the user has logged in.
             self.parent.unloadQuizBrowserScreen()
             self.parent.loadQuizBrowserScreen()
     
@@ -146,13 +159,17 @@ class ExamBoardEditor(ListEditor):
         toplevel is the tkinter object of the parent window.
         parent in the MainApp object, unless another dialog opens this window.
         """
+        # Run the parent method to create the base window, which will be modified to be tuned to be specifically for modifying subjects.
         self.generateGUI(toplevel, parent)
         # Setting the title of the window.
         self.window.title("Exam Board List Editor")
+        # Creating the "examBoardMapping", which is a list which links each index of the list to the ExamBoardID in the database.
+        # This is necessary because when the code checks what has been selected, it finds a list index rather than an exam board ID.
         self.examBoardMapping = []
         for i in self.parent.examboardDictionary.values():
-            # For every exam board in the database, add it to the list and the mapping list.
+            # For every exam board in the database, add it to the on screen list.
             self.listView.insert(tk.END, i)
+            # And, add it to the exam board mapping.
             self.examBoardMapping.append(self.parent.inverseExamboardDictionary[i])
 
     def add(self) -> None:
@@ -175,13 +192,16 @@ class ExamBoardEditor(ListEditor):
             tkmb.showerror("Add exam board error", "Name should be shorter than 20 characters (currently: " + str(len(name)) + ").")
         # Regular expression to check if the name has any invalid characters.
         nameRegex = re.compile('[^a-zA-Z0-9\.\- ]')
+        # Run the regular expression on the name of the subject.
         reducedName = nameRegex.sub("", name)
         if(reducedName != name):
+            # If running the regular expression changes the name string, it must have invalid characters and so the format check has failed. Show an error message to the user.
             tkmb.showerror("Name error", "Name contains invalid characters, it should only contain english letters, numbers, spaces, dashes, or full stops/periods.", parent = self.window)
             return
         for i in self.parent.examboardDictionary.values():
             # Check if the exam board already exists in the database.
             if(i.lower() == name.lower()):
+                # If the exam board already exists, then show an error message.
                 tkmb.showerror("Add exam board error", "Exam board already exists in the list.")
                 return
         # If all the other checks pass, add the exam board to the dictionary.

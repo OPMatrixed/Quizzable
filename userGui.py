@@ -1,12 +1,17 @@
-# This file will handle two screens specified on the design document:
-# the user creation screen, and the user settings screen.
+"""
+This file will handle two screens specified on the design document:
+the user creation screen, and the user settings screen.
+"""
 
+# TkInter is used for the GUI subroutines and classes.
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
 import tkinter.messagebox as tkmb
+# Regular expressions are used for format checks.
 import re
 
+# Imports the user file from the application's base directory.
 import user
 
 class UserCreateDialog(object):
@@ -90,10 +95,13 @@ class UserCreateDialog(object):
         # This if statement changes the timer setting text depending on what the timer
         # setting has been changed to.
         if(setting == 0):
+            # If the first button was clicked, set the timer setting text to 'No timer'.
             self.timerSettingsLabel.config(text = "Timer setting: No timer")
         elif(setting == 1):
+            # If the second button was clicked, set the timer setting text to 'Long timer'.
             self.timerSettingsLabel.config(text = "Timer setting: Long timer")
         else:
+            # If the third button was clicked, set the timer setting text to 'Short timer'.
             self.timerSettingsLabel.config(text = "Timer setting: Short timer")
     
     def finish(self) -> None:
@@ -135,7 +143,7 @@ class UserCreateDialog(object):
             defaultExamBoardID = query[0][0]
         # This creates the user object, which automatically adds the user to the database.
         self.parent.currentUser = user.User(self.parent.database, -1, username, self.timeSetting, defaultExamBoardID)
-        
+        # Imports the mainmenu file from the base directory of the application.
         import mainmenu
         # If the user is on the login screen, turn it to the quiz browser screen.
         if(self.parent.state == mainmenu.MainWindowStates.login):
@@ -191,12 +199,15 @@ class UserSettingsDialog(object):
         examBoardQueryResults = self.parent.database.execute("SELECT * FROM `Examboards`;")
         examBoardList = ["No preference"]
         if(examBoardQueryResults):
+            # For each exam board in the database, add it to the list of selectable exam boards.
             examBoardList += [i[1] for i in examBoardQueryResults]
         # To set the user's current exam board as the default value in the field, this code must run
         self.currentExamBoard = tk.StringVar()
         if(self.parent.currentUser.defaultExamBoard != -1):
+            # If there was a default exam board set, set the default value of the drop-down to the previous default exam board.
             self.currentExamBoard.set(self.parent.examboardDictionary[self.parent.currentUser.defaultExamBoard])
         else:
+            # Otherwise, the default value should be 'No preference'.
             self.currentExamBoard.set("No preference")
         
         # The actual entry fields for the user settings.
@@ -216,6 +227,7 @@ class UserSettingsDialog(object):
         # This button will run the self.finish() method, and will save the user settings in the database.
         self.completeButton = tk.Button(self.window, text = "Update user settings", command = self.finish)
         self.completeButton.grid(row = 4, column = 3, sticky = tk.W+tk.E+tk.N+tk.S)
+        # Set the time setting to the setting that was the user's previous time setting.
         self.changeTimeSetting(self.parent.currentUser.timeConfig)
     
     def changeTimeSetting(self, setting):
@@ -224,10 +236,13 @@ class UserSettingsDialog(object):
         # This if statement changes the timer setting text depending on what the timer
         # setting has been changed to.
         if(setting == 0):
+            # If the first button was clicked, set the timer setting text to 'No timer'.
             self.timerSettingsLabel.config(text = "Timer setting: No timer")
         elif(setting == 1):
+            # If the second button was clicked, set the timer setting text to 'Long timer'.
             self.timerSettingsLabel.config(text = "Timer setting: Long timer")
         else:
+            # If the third button was clicked, set the timer setting text to 'Short timer'.
             self.timerSettingsLabel.config(text = "Timer setting: Short timer")
     
     def finish(self) -> None:
@@ -236,17 +251,19 @@ class UserSettingsDialog(object):
         This will update the user's settings that are currently in memory and update the user record on the database.
         This destroys the window after all the previous tasks are finished.
         """
-        
+        # Get the default exam board the user has selected.
         defaultExamBoard = self.defaultExamBoardEntry.get()
         defaultExamBoardID = -1
         # The following gets the default exam board setting.
-        if(defaultExamBoard == ""):
+        if(defaultExamBoard == "" or defaultExamBoard == "No preference"):
+            # If the user has not selected a default exam board, only update the time setting.
             self.parent.currentUser.savePreferences(timeConfig = self.timeSetting)
-            self.window.destroy()
-            return
-        if(defaultExamBoard != "No preference"):
-            query = self.parent.database.execute("SELECT `ExamboardID` FROM `Examboards` WHERE `EName`=?;", defaultExamBoard)
+        else:
+            # Otherwise, update the default exam board.
+            # Fetch the ID of the selected exam board.
+            query = self.parent.database.execute("SELECT `ExamboardID` FROM `Examboards` WHERE `EName` = ?;", defaultExamBoard)
             defaultExamBoardID = query[0][0]
-        self.parent.currentUser.savePreferences(timeConfig = self.timeSetting, defaultExamBoard = defaultExamBoardID)
-        
+            # Update the user's settings in the database with the new settings.
+            self.parent.currentUser.savePreferences(timeConfig = self.timeSetting, defaultExamBoard = defaultExamBoardID)
+        # Destroy the window if everything else has successfully completed.
         self.window.destroy()

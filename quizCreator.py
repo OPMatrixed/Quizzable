@@ -1,5 +1,6 @@
 """This file will handle the GUI for creating and editing quizzes."""
 
+# TkInter modules are for the GUI.
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
@@ -57,11 +58,15 @@ class QuizCreatorDialog(object):
         self.tagsLabel = tk.Label(self.window, text = "Tags (separate using commas):")
         # Creating the text fields and drop down menus.
         self.nameEntry = tk.Entry(self.window, textvariable = self.nameString)
+        # Fetches the exam boards and subjects from the application dictionaries.
         self.examBoardCombobox = ttk.Combobox(self.window, textvariable = self.examBoardString, state = "readonly", values = ["None"] + list(self.parent.examboardDictionary.values()))
         self.subjectCombobox = ttk.Combobox(self.window, textvariable = self.subjectString, state = "readonly", values = ["None"] + list(self.parent.subjectDictionary.values()))
+        # The difficulty options are hard coded, because the user can't create their own difficulties.
         self.difficultyCombobox = ttk.Combobox(self.window, textvariable = self.difficultyString, state = "readonly", values = [1, 2, 3, 4, 5])
         self.tagsEntry = tk.Entry(self.window, textvariable = self.tagsString)
+        # Creating the 'Finish Quiz' button.
         self.finishButton = tk.Button(self.window, text = "Finish Quiz", command = self.submit)
+        # Creating the 'Add another question' button.
         self.addQuestionButton = tk.Button(self.window, text = "Add another question", command = self.addNewQuestion)
         # Adding visual horizontal separator bar between questions and quiz data.
         self.horizontalSeparator = ttk.Separator(self.window, orient = "horizontal")
@@ -155,7 +160,7 @@ class QuizCreatorDialog(object):
     def removeQuestion(self, index):
         """This removes a question from the list at a given index."""
         for i in range(8):
-            # Goes through all the elements and deletes them.
+            # Goes through all the visual text entry elements for the given question and deletes them.
             self.questions[index][i].destroy()
         # Removes the question row entry from the dictionary.
         del self.questions[index]
@@ -171,36 +176,46 @@ class QuizCreatorDialog(object):
         tags = self.tagsString.get()
         # Title length check, show an error message if it's too long or too short.
         if(len(title) < 3):
+            # If the title is too short, show an error message.
             tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = self.window)
             return
         if(len(title) > 70):
+            # If the title is too long, show an error message.
             tkmb.showerror("Title error", "Quiz title is too long, it should be at most 70 characters long (currently: " + str(len(title)) + ").", parent = self.window)
             return
         # Regular expression to check if the title has any invalid characters.
         quizTitleRegex = re.compile('[^a-zA-Z0-9\.\-\? ]')
+        # Run the quiz title through the regular expression.
         reducedTitle = quizTitleRegex.sub("", title)
         if(reducedTitle != title):
+            # If the title is changed by the regular expression, it contained invalid characters and so has failed the format check. Show an error message to the user.
             tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = self.window)
             return
         # Presence check on difficulty drop-down entry box.
         if(not difficulty):
+            # If there is no difficulty entered, show an error message.
             tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = self.window)
             return
         # Length check on tag entry.
         if(len(tags) > 150):
+            # If the length of the tags is too long, show an error message.
             tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(tags)) + ").", parent = self.window)
             return
         # Reformatting tags in case the user hasn't entered in the correct format, by removing all whitespace that would be adjacent to a comma.
         tagList = []
-        for i in tags.split(","):
+        for i in tags.split(","): # Convert the CSV string to a list
+            # For each tag,
             if(i.strip() == ""):
+                # If (after removing preceeding and trailing whitespace) there is no tag, skip it.
                 continue
+            # Else, remove the preceeding and trailing whitespace and turn the tag to lower case, and add it to the tag list.
             tagList.append(i.strip().lower())
+        # Re-creating the tags CSV string in case the last one had excess commas or had excess whitespace.
         tags = ",".join(tagList)
         # Validating all the questions.
         questions = []
         for i in self.questions.keys():
-            # For each question, get all the entered fields.
+            # For each question, get all the entered fields from the GUI.
             questionText = self.questions[i][0].get()
             correctAnswer = self.questions[i][1].get()
             otherAnswers = []
@@ -218,14 +233,16 @@ class QuizCreatorDialog(object):
             help = self.questions[i][6].get()
             # Create a question object and check if it is valid.
             q = quiz.Question(-1, questionText, correctAnswer, otherAnswers, -1, hint, help)
+            # Check if the question is valid, errorText will be None if there are no errors, else it will be a string.
             errorText = q.validate()
             if(errorText):
-                # If it's invalid, show an error, and then return.
+                # If it's invalid, show the error, and then return.
                 tkmb.showerror("Question error", "Question (\"" + questionText + "\") has error: " + errorText, parent = self.window)
                 return
+            # If the question passes the checks, add it to the final list.
             questions.append(q)
-        # If there are less than 2 questions, show an error, and the return.
         if(len(questions) < 2):
+            # If there are less than 2 questions, show an error, and the return.
             tkmb.showerror("Question error", "Quiz should have at least 2 questions.", parent = self.window)
             return
         # Get the subject and/or exam board ID from the text entry.
@@ -249,6 +266,7 @@ class QuizCreatorDialog(object):
         # Check if any other quizzes have the same title.
         quizzesWithSameTitle = self.parent.database.execute("SELECT * FROM `Quizzes` WHERE `QuizName` = ?;", title)
         if(len(quizzesWithSameTitle) > 0):
+            # If there is another quiz with the same title, show an error message.
             tkmb.showerror("Quiz error", "Quiz name is already in use.", parent = self.window)
             return
         
@@ -382,31 +400,41 @@ class QuizEditorDialog(QuizCreatorDialog):
         tags = self.tagsString.get()
         # Title length check, show an error message if it's too long or too short.
         if(len(title) < 3):
+            # If the title is too short, display an error message.
             tkmb.showerror("Title error", "Quiz title is too short, it should be at least 3 characters long (currently: " + str(len(title)) + ").", parent = self.window)
             return
         if(len(title) > 70):
+            # If the title is too long, display an error message.
             tkmb.showerror("Title error", "Quiz title is too long, it should be at most 70 characters long (currently: " + str(len(title)) + ").", parent = self.window)
             return
         # Regular expression to check if the title has any invalid characters.
         quizTitleRegex = re.compile('[^a-zA-Z0-9\.\-\? ]')
+        # Running the title through the regular expression.
         reducedTitle = quizTitleRegex.sub("", title)
         if(reducedTitle != title):
+            # If the title is changed by the regular expression, then it contained invalid characters and so has failed the format check. Show an error message to the user.
             tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = self.window)
             return
         # Presence check on difficulty drop-down entry box.
         if(not difficulty):
+            # If the difficulty has not been set, show an error message.
             tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = self.window)
             return
         # Length check on tag entry.
         if(len(tags) > 150):
+            # If the tags entry is too long, show an error message.
             tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(tags)) + ").", parent = self.window)
             return
         # Reformatting tags in case the user hasn't entered in the correct format, by removing all whitespace that would be adjacent to a comma.
         tagList = []
-        for i in tags.split(","):
+        for i in tags.split(","): # Convert the CSV string to a list
+            # For each tag,
             if(i.strip() == ""):
+                # If (after removing preceeding and trailing whitespace) there is no tag, skip it.
                 continue
-            tagList.append(i.strip())
+            # Else, remove the preceeding and trailing whitespace and turn the tag to lower case, and add it to the tag list.
+            tagList.append(i.strip().lower())
+        # Re-creating the tags CSV string in case the last one had excess commas or had excess whitespace.
         tags = ",".join(tagList)
         # Validating all the questions.
         questions = []
@@ -429,14 +457,16 @@ class QuizEditorDialog(QuizCreatorDialog):
             help = self.questions[i][6].get()
             # Create a question object and check if it is valid.
             q = quiz.Question(-1, questionText, correctAnswer, otherAnswers, -1, hint, help)
+            # Check if the question is valid, errorText will be None if there are no errors, else it will be a string.
             errorText = q.validate()
             if(errorText):
                 # If it's invalid, show an error, and then return.
                 tkmb.showerror("Question error", "Question (\"" + questionText + "\") has error: " + errorText, parent = self.window)
                 return
+            # If the question passes all the checks, add it to the questions list.
             questions.append(q)
-        # If there are less than 2 questions, show an error, and the return.
         if(len(questions) < 2):
+            # If there are less than 2 questions, show an error, and the return.
             tkmb.showerror("Question error", "Quiz should have at least 2 questions.", parent = self.window)
             return
         # Get the subject and/or exam board ID from the text entry.
@@ -460,6 +490,7 @@ class QuizEditorDialog(QuizCreatorDialog):
         # Check if any other quizzes have the same title.
         quizzesWithSameTitle = self.parent.database.execute("SELECT * FROM `Quizzes` WHERE `QuizName`=?;", title)
         if(len(quizzesWithSameTitle) > 0 and quizzesWithSameTitle[0][0] != self.quiz.id):
+            # If another quiz exists with the same title that isn't the quiz currently being edited, show an error message.
             tkmb.showerror("Quiz error", "Quiz name is already in use.", parent = self.window)
             return
         

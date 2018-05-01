@@ -1,5 +1,6 @@
 """This file will handle the GUI for users answering the questions on a quiz."""
 
+# TkInter used for GUI subroutines and classes.
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkfont
@@ -56,18 +57,20 @@ class ActiveQuizDialog(object):
         self.quizNameLabel = tk.Label(self.window, text = quiz.name, anchor = tk.NW, font = self.quizNameFont)
         subjectExamBoard = []
         if(quiz.subject in parent.subjectDictionary.keys()):
+            # If the quiz has a subject set, then add it to the text to be displayed at the top of the quiz window.
             subjectExamBoard.append(parent.subjectDictionary[quiz.subject])
         if(quiz.examBoard in parent.examboardDictionary.keys()):
+            # If the quiz has an exam board set, then add it to the text to be displayed at the top of the quiz window.
             subjectExamBoard.append(parent.examboardDictionary[quiz.examBoard])
+        # Display the subject and/or exam board if they have been set.
         self.quizSubjectAndExamBoardLabel = tk.Label(self.window, text =  " - ".join(subjectExamBoard), anchor = tk.NW)
         # Lots of arguments on the next line of code. anchor = tk.W means that all new lines are left-aligned.
         # justify = tk.LEFT means that the whole chunk of text should be left-aligned. Both anchor and justify are needed because they have small differences.
         # wraplength is the amount of pixels the text can fill horizontally before needing to go onto a new line.
-        # TODO: Dynamic wraplength (in pixels), which should always be 75% of the window width.
-        #       Add an event listener on toplevel for window size changes.
-        self.questionLabel  = tk.Label(self.window, anchor = tk.W, font = self.questionFont, justify = tk.LEFT, wraplength = 550,
-                text = "<Question goes here> \n<If the question is a long question, then this text box spans over multiple lines>")
+        self.questionLabel  = tk.Label(self.window, anchor = tk.W, font = self.questionFont, justify = tk.LEFT, wraplength = 550, text = "")
+        # The user's username, to be placed in the top right of the screen.
         self.usernameLabel  = tk.Label(self.window, text = self.user.username, font = self.questionFont)
+        # The time limit label, to be placed between the user's username label and the hint/help buttons.
         self.timeLimitLabel = tk.Label(self.window, text = "", font = self.questionFont)
         # Positioning the text labels on the top 3 rows.
         self.quizNameLabel.grid(row = 0, column = 0, sticky = tk.W+tk.E+tk.N+tk.S)
@@ -77,6 +80,7 @@ class ActiveQuizDialog(object):
         self.timeLimitLabel.grid(row = 2, column = 1)
         # The answer buttons
         self.answerButtons = [None, None, None, None]
+        # Each button has its own command, as each submits a different answer.
         self.answerButtons[0] = tk.Button(self.window, text = "<Option 1>", font = self.buttonFont, command = lambda: self.answerButtonClick(0))
         self.answerButtons[1] = tk.Button(self.window, text = "<Option 2>", font = self.buttonFont, command = lambda: self.answerButtonClick(1))
         self.answerButtons[2] = tk.Button(self.window, text = "<Option 3>", font = self.buttonFont, command = lambda: self.answerButtonClick(2))
@@ -97,32 +101,40 @@ class ActiveQuizDialog(object):
         self.pauseButton.grid(row = 5, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
         self.endQuizButton.grid(row = 6, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
         
-        # Starting the quiz thread
+        # Creating the secondary quiz thread.
         t = threading.Thread(target = self.quizThread)
+        # Set the active quiz window's state to running.
         self.running = True
+        # Starting the secondary thread.
         t.start()
     
     def answerButtonClick(self, answer: int) -> None:
         """This method is a simple method to be run in a lambda statement whenever an answer button is clicked."""
         if(self.currentState == 0):
+            # If the window is in a state to accept an answer, then set their answer to the button number that they clicked.
             self.theirAnswer = answer
+            # Change the state so the user can't change their answer.
             self.currentState = 1
     
     def showHint(self):
         """This displays a hint to the user, if the question has one."""
         if(self.quiz.questions[self.questionNumber].hint):
+            # If the current question has a hint text, show a message box with the hint in it.
             tkmb.showinfo("Hint", self.quiz.questions[self.questionNumber].hint, parent = self.window)
     
     def showHelp(self):
         """This displays help to the user, if the question has it."""
         if(self.quiz.questions[self.questionNumber].help):
-            # If they open the help, mark the question as wrong.
+            # If they open the help, mark the question as wrong (there is no answer with index 4, arrays start at zero so it would be the 5th answer).
             self.theirAnswer = 4
+            # Stop the user answering.
             self.currentState = 1
+            # Display the help as a message box.
             tkmb.showinfo("Help", self.quiz.questions[self.questionNumber].help, parent = self.window)
     
     def pause(self):
         """This toggles the pause state of the quiz."""
+        # This is a simple pause toggle. If self.paused was False, then it becomes True. If it was True, then it becomes False.
         self.paused = not self.paused
     
     def quizThread(self):

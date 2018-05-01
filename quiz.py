@@ -30,47 +30,47 @@ class Question(object):
         If all the checks pass, it doesn't return anything.
         """
         # Type checks
-        if(not isinstance(self.question, str)):
+        if(not isinstance(self.question, str)): # Checking if the question is a string
             return "Question is not a string."
-        if(not isinstance(self.correctAnswer, str)):
+        if(not isinstance(self.correctAnswer, str)): # Checking if the correct answer is a string
             return "Correct answer is not a string."
-        if(not isinstance(self.hint, str)):
+        if(not isinstance(self.hint, str)): # Checking if the hint is a string
             return "Hint is not a string."
-        if(not isinstance(self.help, str)):
+        if(not isinstance(self.help, str)):  # Checking if the help is a string
             return "Help is not a string."
-        if(not isinstance(self.otherAnswers, list)):
+        if(not isinstance(self.otherAnswers, list)):  # Checking if the other answers are in a list
             return "Other answers is not a list."
         # Presence and length checks on the question string
-        if(not self.question):
+        if(not self.question): # Checking if a question has been entered.
             return "No question entered."
-        if(len(self.question) < 4):
+        if(len(self.question) < 4): # Checking if the question is not long enough.
             return "Question less than 4 characters."
-        if(len(self.question) > 300):
+        if(len(self.question) > 300): # Checking if the  question is too long.
             return "Question longer than 300 characters."
         # Presenece and length checks on the correct answer string
-        if(not self.correctAnswer):
+        if(not self.correctAnswer): # Checking if the correct answer has been entered.
             return "No correct answer."
-        if(len(self.correctAnswer) > 150):
+        if(len(self.correctAnswer) > 150): # Checking if the correct answer is too long.
             return "Correct answer is longer than 150 characters."
         # Checks on the other answer strings
-        if(not self.otherAnswers):
+        if(not self.otherAnswers): # Checking if the other answers have been entered.
             return "No wrong answers."
-        if(len(self.otherAnswers) > 3):
+        if(len(self.otherAnswers) > 3): # Checking if there are too many wrong answers.
             return "Too many other answers."
         for i in range(len(self.otherAnswers)):
             # Looping through all the other answer strings.
-            if(not isinstance(self.otherAnswers[i], str)):
+            if(not isinstance(self.otherAnswers[i], str)): # Checking that each wrong answer is a string.
                 return "Wrong answer " + str(i + 1) + " is not a string."
-            if(not self.otherAnswers[i]):
+            if(not self.otherAnswers[i]): # Checking if each wrong answer has been entered.
                 return "No wrong answer no. " + str(i + 1)
-            if(len(self.otherAnswers[i]) > 150):
+            if(len(self.otherAnswers[i]) > 150): # Checking if each wrong answer is too long.
                 return "Wrong answer no. " + str(i + 1) + " is too long."
-            if(self.otherAnswers[i] == self.correctAnswer):
+            if(self.otherAnswers[i] == self.correctAnswer): # Checking if any of the wrong answers are the same as the correct answer.
                 return "Wrong answer no. " + str(i + 1) + " is the same as the correct answer."
         # Length check on hint/help variables, and these variables can be empty strings.
-        if(len(self.hint) > 400):
+        if(len(self.hint) > 400): # Checking that the hint is not too long.
             return "Hint is longer than 400 characters."
-        if(len(self.help) > 2000):
+        if(len(self.help) > 2000): # Checking that the help is not too long.
             return "Help is longer than 2000 characters."
         # If it reaches here, all the checks have passed and the function returns nothing.
     
@@ -91,6 +91,7 @@ class Question(object):
         index = random.randint(0, len(self.otherAnswers))
         # This adds the correct answer to the answers list, at the position of the value of 'index'
         answers.insert(index, self.correctAnswer)
+        # Returns the shuffled answers, as well as the index of the correct answer in the answers list.
         return answers, index
     
     def addToDatabase(self, database) -> None:
@@ -221,18 +222,19 @@ class Quiz(object):
         return md5.hexdigest()
     
     # Methods below are not executed on an object, but the Quiz class itself.
-    # i.e. to use these methods you wouldn't need a Quiz object ( q = Quiz(args here); q.getQuiz(other args here) - this is wrong)
+    # i.e. to use these methods you wouldn't need a Quiz object ( q = Quiz(args here); q.getQuiz(other args here) - this is wrong )
     # but you still execute them on the Quiz class ( q = Quiz.getQuiz(args here) - getQuiz returns a Quiz object, correct way to use ).
     
     def getQuiz(id: int, database) -> 'Quiz': # This is not called on an object, but the class itself.
         """This will load a quiz given a quiz ID, and return it as a Quiz object."""
         # Queries the database to find the quiz record which is to be loaded.
-        rows = database.execute("SELECT * FROM `Quizzes` WHERE `QuizID`=?;", float(id))
+        rows = database.execute("SELECT * FROM `Quizzes` WHERE `QuizID` = ?;", float(id))
         # This checks if the 'rows' list is not empty. This uses the property that empty lists in python are treated as false by if and while statements, and non-empty lists are true.
         if(rows):
             # Goes through each field in the record and returns a Quiz object
             record = rows[0]
-            questionRows = database.execute("SELECT * FROM `Questions` WHERE `QuizID`=?;", float(id))
+            # Fetch the questions for the quiz.
+            questionRows = database.execute("SELECT * FROM `Questions` WHERE `QuizID` = ?;", float(id))
             questionList = [Question.getQuestionFromDatabaseRecord(i) for i in questionRows] # This turns all the question records to a list of question objects.
             title = record[1]
             subjectID = record[2]
@@ -245,6 +247,7 @@ class Quiz(object):
             difficulty = record[6]
             return Quiz(database, id, title, tags, subjectID, examboardID, difficulty, questionList) # This creates the quiz object and returns it.
         else:
+            # If no quiz is found with the given ID, return an error.
             raise IndexError("No quiz found at the given id.")
     
     def importQuiz(parent, filename: str) -> 'Quiz': # This is not called on an object, but the class itself.
@@ -381,16 +384,20 @@ class Quiz(object):
             return
         # Regular expression to check if the title has any invalid characters.
         quizTitleRegex = re.compile('[^a-zA-Z0-9\.\-\? ]')
+        # Run the title through the regular expression.
         reducedTitle = quizTitleRegex.sub("", title)
         if(reducedTitle != title):
+            # If the title has been changed by the regular expression, the title contained invalid characters and so has failed the format check. Show an error message to the user.
             tkmb.showerror("Title error", "Quiz title contains invalid characters, it should only contain english letters, numbers, spaces, dashes, question marks, or full stops/periods.", parent = parent.tk)
             return
         # Presence check on difficulty drop-down entry box.
         if(not difficulty):
+            # If no difficulty has been set, show an error.
             tkmb.showerror("Difficulty error", "No difficulty has been set for this quiz.", parent = parent.tk)
             return
         # Length check on tag entry.
         if(len(",".join(tags)) > 150):
+            # If the length of the tags is too long, show an error.
             tkmb.showerror("Tags error", "Tag list is too long, it should be at most 150 characters long (currently: " + str(len(title)) + ").", parent = parent.tk)
             return
         # Creating a quiz object, so a hash can be generated.

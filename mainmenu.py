@@ -14,6 +14,7 @@ import difflib
 import collections
 # Time is used to track how long each search/filter takes.
 import time
+# The 'math' module is used for its floor and ceiling functions. I have renamed it 'maths' because it's better this way.
 import math as maths
 
 # This imports the database file from the same directory as this file.
@@ -29,6 +30,8 @@ class MainWindowStates:
     quizBrowser = 2
 
 class MainMenu(object):
+    # The app title and the version, stored as strings here and can be accessed from anywhere in the system.
+    # These variables are usually used in window titles.
     appName = "Quizzable"
     appVersion = "v1"
     # If you haven't seen the following method notation before, you can put a colon after a parameter name to indicate what type it should be.
@@ -61,23 +64,29 @@ class MainMenu(object):
         # This loads the login screen on the main window.
         self.loadLoginScreen()
         
+        # Exam boards are stored in a dictionary, where the database IDs map to each exam board's name.
         self.examboardDictionary = {}
         # This queries the database to get the names of the exam boards.
         examboardQueryResults = self.database.execute("SELECT * FROM `Examboards`;")
         if(examboardQueryResults):
+            # If exam boards have been found in the database:
             for i in examboardQueryResults:
+                # Loop through each exam board in the database table, and add it to the exam board dictionary.
                 self.examboardDictionary[i[0]] = i[1]
         
+        # Subjects are stored in a dictionary, where the database IDs map to each subject's name.
         self.subjectDictionary = {}
         # This queries the database to get the names of the subjects.
         subjectQueryResults = self.database.execute("SELECT * FROM `Subjects`;")
         if(subjectQueryResults):
+            # If subjects have been found in the database:
             for i in subjectQueryResults:
+                # Loop through each subject in the database table, and add it to the subject dictionary.
                 self.subjectDictionary[i[0]] = i[1]
-        # Inverse dictionaries for backwards lookups
+        # Inverse dictionaries for backwards lookups, where the system needs to find a database ID from a subject or exam board name.
         self.inverseSubjectDictionary = {v: k for k, v in self.subjectDictionary.items()}
         self.inverseExamboardDictionary = {v: k for k, v in self.examboardDictionary.items()}
-        # The quiz the user has currently selected, starts off as None.
+        # The quiz the user has currently selected, starts off as None (as no quiz is selected by default).
         self.currentlySelectedQuiz = None
     
     def createTitleBarMenu(self) -> None:
@@ -98,24 +107,33 @@ class MainMenu(object):
         self.userMenu = tk.Menu(self.menuBar, tearoff = 0)
         # userGui.UserCreateDialog() makes a Create User window, and it is passed as a lambda statement as arguments have to be passed.
         self.userMenu.add_command(label = "Create New User", command = lambda: userGui.UserCreateDialog(self.tk, self))
+        # The command to open the user settings window.
         self.userMenu.add_command(label = "User Settings", command = self.userSettings)
+        # The command to switch user, which only works after the user has logged in.
         self.userMenu.add_command(label = "Change User", command = self.switchUser)
         
         # This is the subjects & exam boards drop-down.
         self.subjectsAndExamBoardsMenu = tk.Menu(self.menuBar, tearoff = 0)
+        # This launches the subject list editor window.
         self.subjectsAndExamBoardsMenu.add_command(label = "Edit Subject List", command = lambda: listEditor.SubjectEditor(self.tk, self))
+        # This launches the exam board list editor window.
         self.subjectsAndExamBoardsMenu.add_command(label = "Edit Exam Board List", command = lambda: listEditor.ExamBoardEditor(self.tk, self))
         
         # This is the quiz drop-down, and handles creating quizzes and import quizzes.
         self.quizMenu = tk.Menu(self.menuBar, tearoff = 0)
+        # The command to open the quiz creator window.
         self.quizMenu.add_command(label = "Create a Quiz", command = self.createQuizButtonCommand)
+        # The command to start the process of importing a quiz, firstly by opening the Windows open file dialog.
         self.quizMenu.add_command(label = "Import a Quiz", command = self.importQuizButtonCommand)
         
         # Adding the above sub-menus to the main menu bar.
+        # The "Quiz Management" drop-down which contains the create/import quiz command buttons.
         self.menuBar.add_cascade(label = "Quiz Management", menu = self.quizMenu)
+        # The "User" drop-down, which contains the "Add User", "Edit user settings", and "Change user" commands.
         self.menuBar.add_cascade(label = "User", menu = self.userMenu)
+        # The "Subjects & Exam Boards" drop-down, which has the command buttons to open the list editor windows.
         self.menuBar.add_cascade(label = "Subjects & Exam Boards", menu = self.subjectsAndExamBoardsMenu)
-        
+        # The "Statistics" button, which is next to the drop-down menus, which also launches the statistics window.
         self.menuBar.add_command(label = "Statistics", command = self.launchStatistics)
         
         # Assigns the menu to the window.
@@ -134,10 +152,14 @@ class MainMenu(object):
         # The following lines configure the "grid", on which elements are placed, to adjust the sizes of the rows and columns.
         # This grid will have 3 columns and 8 rows.
         # Column configuration:
+        # All the visual elements will be placed in the centre column, the two surrounding columns are for padding.
         self.tk.grid_columnconfigure(0, weight = 2)
         self.tk.grid_columnconfigure(1, weight = 1)
         self.tk.grid_columnconfigure(2, weight = 2)
         # Row configuration:
+        # The 2nd row holds the heading text, the 4th row holds the user drop-down,
+        # the 6th and 7th rows contain the select/create user buttons.
+        # Note that row '0' is the 1st row, and '1' is the 2nd row, etc.
         self.tk.grid_rowconfigure(0, weight = 3)
         self.tk.grid_rowconfigure(1, weight = 2)
         self.tk.grid_rowconfigure(2, weight = 1)
@@ -146,16 +168,20 @@ class MainMenu(object):
         self.tk.grid_rowconfigure(5, weight = 2)
         self.tk.grid_rowconfigure(6, weight = 2)
         self.tk.grid_rowconfigure(7, weight = 1)
-        # Login screen heading text
+        # Creating the login screen heading text
         self.loginLabel = tk.Label(self.tk, text = "User Selection", font = headerFont)
         
+        # Creating a list to hold all the usernames of the users, to be placed in the user drop-down.
         userList = []
         # This queries the database to get the usernames of all the users.
         userQueryResults = self.database.execute("SELECT `Username` FROM `Users`;")
         if(userQueryResults):
+            # If users are found in the database:
             for i in userQueryResults:
+                # For each user in the database, add their username to the user list.
                 userList.append(i[0])
         else:
+            # If no users are found in the database, show the following message:
             userList = ["No users created, click \"Create User\""]
         
         # The user selection combobox (drop-down list).
@@ -165,10 +191,10 @@ class MainMenu(object):
         # The create user button, which launches the Create User box.
         self.loginCreateUserButton = tk.Button(self.tk, text = "Create User", bg = "#DFDFDF", border = 3, relief = tk.GROOVE, command = lambda: userGui.UserCreateDialog(self.tk, self))
         # Positioning the above elements in the grid layout.
-        self.loginLabel.grid(row = 1, column = 1)
-        self.loginComboUser.grid(row = 3, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.loginSelectUserButton.grid(row = 5, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.loginCreateUserButton.grid(row = 6, column = 1, sticky = tk.W+tk.E+tk.N+tk.S)
+        self.loginLabel.grid(row = 1, column = 1) # The heading text.
+        self.loginComboUser.grid(row = 3, column = 1, sticky = tk.W+tk.E+tk.N+tk.S) # The user selection drop-down menu.
+        self.loginSelectUserButton.grid(row = 5, column = 1, sticky = tk.W+tk.E+tk.N+tk.S) # The select user button.
+        self.loginCreateUserButton.grid(row = 6, column = 1, sticky = tk.W+tk.E+tk.N+tk.S) # The create user button.
     
     def unloadLoginScreen(self) -> None:
         """
@@ -183,9 +209,9 @@ class MainMenu(object):
         self.loginSelectUserButton.destroy()
         # Resetting the grid configuration.
         for i in range(8):
-            # Resetting rows
+            # Resetting each row.
             self.tk.grid_rowconfigure(i, weight = 0)
-        # Resetting columns
+        # Resetting the columns.
         self.tk.grid_columnconfigure(0, weight = 0)
         self.tk.grid_columnconfigure(1, weight = 0)
         self.tk.grid_columnconfigure(2, weight = 0)
@@ -221,32 +247,41 @@ class MainMenu(object):
         # Changing the title of the window.
         self.tk.title("Quiz Browser - " + MainMenu.appName + " - " + MainMenu.appVersion)
         # Configuring the window and the window grid. This grid has 4 rows and 4 columns.
+        # The row configuration:
+        # The top two rows must have a minimum height, each has a minimum of 40px height.
+        # The heights of the rows can be larger if any of the elements on the top two rows need more space, space is added automatically by TkInter.
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 40)
-        self.tk.grid_rowconfigure(1, weight = 0, minsize = 40)
+        self.tk.grid_rowconfigure(1, weight = 0, minsize = 40)]
+        # The bottom two rows are for the large frame that holds the question lists and the side panel.
         self.tk.grid_rowconfigure(2, weight = 1)
         self.tk.grid_rowconfigure(3, weight = 1)
+        # The column configuration:
         self.tk.grid_columnconfigure(0, weight = 1)
         self.tk.grid_columnconfigure(1, weight = 1)
         self.tk.grid_columnconfigure(2, weight = 1)
+        # The last column is the side panel column, which is forced to have a width larger than 200px.
         self.tk.grid_columnconfigure(3, weight = 1, minsize = 200)
         
         # Adding the search box widget.
         # I create a frame here, as I want the "Search:" text and the text entry to behave like a single element spanning over 2 columns in the window grid.
         self.quizBrowserSearchFrame = tk.Frame(self.tk)
-        # Frame grid configuration, 2 columns and 1 row.
+        # Frame grid configuration, 2 columns and 1 row - the second column should be much wider than the first column, hence the larger weight.
         self.quizBrowserSearchFrame.grid_columnconfigure(0, weight = 1)
         self.quizBrowserSearchFrame.grid_columnconfigure(1, weight = 4)
         self.quizBrowserSearchFrame.grid_rowconfigure(0, weight = 1)
         # The search text preceding the text entry box.
         self.quizBrowserSearchLabel = tk.Label(self.quizBrowserSearchFrame, text = "Search:")
+        # "sticky = tk.E" below makes the search label go as far to the right within its column as it can.
         self.quizBrowserSearchLabel.grid(row = 0, column = 0, sticky = tk.E)
         # The actual search bar. This will be tied to an event later which updates the search after each letter is typed.
-        self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10)
+        self.quizBrowserSearchEntry = tk.Entry(self.quizBrowserSearchFrame, width = 10) # Width is the minimum width in characters.
         # This binds any key press to launch the search algorithm 0.1 seconds after the user has pressed a key.
         # It also starts it in another thread, to prevent the application lagging after every button press.
         self.quizBrowserSearchEntry.bind("<Key>", lambda e: threading.Timer(0.1, self.applyFilters).start())
-        self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky = tk.W+tk.E)
-        self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W+tk.E)
+        # "sticky = tk.W + tk.E" makes the element take as much horizontal space within its column as it can.
+        self.quizBrowserSearchEntry.grid(row = 0, column = 1, sticky = tk.W + tk.E)
+        # Positioning the frame over two columns in the whole window grid.
+        self.quizBrowserSearchFrame.grid(row = 0, column = 0, columnspan = 2, sticky = tk.W + tk.E)
         
         # Create a Quiz, Import a Quiz, and view statistics Buttons
         self.createQuizButton = tk.Button(self.tk, text = "Create a Quiz", command = self.createQuizButtonCommand)
@@ -260,6 +295,7 @@ class MainMenu(object):
         # To remove the filter after selecting a value for the filter, the user must select the combobox and select "No filter".
         self.filterByExamBoardCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.examboardDictionary.values()])
         self.filterBySubjectCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter"] + [i for i in self.subjectDictionary.values()])
+        # The difficulty filter options are hard coded, because the user can't add their own difficulty levels.
         self.filterByDifficultyCombo = ttk.Combobox(self.tk, state = "readonly", values = ["No filter", "1", "2", "3", "4", "5",
                                                     "2 and above", "3 and above", "4 and above", "2 and below", "3 and below", "4 and below"])
         # Setting the default values for the filters.
@@ -277,6 +313,7 @@ class MainMenu(object):
         # Start of frame box that contains the lists.
         self.quizListFrame = tk.Frame(self.tk)
         # The frame's grid configuration.
+        # The first column with the quiz titles should be much larger than the other columns, and has a minimum width of 240px.
         self.quizListFrame.grid_columnconfigure(0, weight = 3, minsize = 240)
         self.quizListFrame.grid_columnconfigure(1, weight = 1)
         self.quizListFrame.grid_columnconfigure(2, weight = 1)
@@ -381,8 +418,10 @@ class MainMenu(object):
             while x < len(quizList):
                 # Go through the list of quizzes, and remove those ones that don't match the exam board filter.
                 if(quizList[x][3] != allowedExamBoard):
+                    # If the quiz doesn't match the filter, remove it.
                     del quizList[x]
                 else:
+                    # Otherwise, carry on.
                     x += 1
         if(not difficultyText == "Filter by difficulty" and not difficultyText == "No filter"):
             # If the difficulty filter has been set:
@@ -394,8 +433,10 @@ class MainMenu(object):
                 while x < len(quizList):
                     # Then go through the list of quizzes, and remove those ones that don't match the difficulty filter.
                     if(quizList[x][6] != allowedDifficulty):
+                        # If the quiz doesn't match the filter, remove it.
                         del quizList[x]
                     else:
+                        # Otherwise, carry on.
                         x += 1
             elif(difficultyText.endswith("above")):
                 # If the difficulty filter is a range with the word "above", e.g. "3 and above".
@@ -405,8 +446,10 @@ class MainMenu(object):
                 while x < len(quizList):
                     # Then go through the list of quizzes, and remove those ones that are below the minimum difficulty.
                     if(quizList[x][6] < allowedDifficulty):
+                        # If the quiz doesn't match the filter, remove it.
                         del quizList[x]
                     else:
+                        # Otherwise, carry on.
                         x += 1
             else:
                 # If the difficulty filter is a range with the word "below", e.g. "2 and below".
@@ -416,8 +459,10 @@ class MainMenu(object):
                 while x < len(quizList):
                     # Then go through the list of quizzes, and remove those ones that are above the maximum difficulty.
                     if(quizList[x][6] > allowedDifficulty):
+                        # If the quiz doesn't match the filter, remove it.
                         del quizList[x]
                     else:
+                        # Otherwise, carry on.
                         x += 1
         
         # Ranking algorithm
@@ -437,6 +482,7 @@ class MainMenu(object):
                     for j in quizList[i][1].split(" "):
                         # For each word in the quiz title, work out how similar the words are and add it to the score.
                         score += 2 * maths.pow(difflib.SequenceMatcher(None, k, j).ratio(), 3)
+                        # Also add the number of exact word matches to the score.
                         score += j.count(k)
                     for j in quizList[i][5].split(","):
                         # Then go through the tags, and work out how similar the words are and add it to the score.
@@ -472,9 +518,12 @@ class MainMenu(object):
                 self.quizExamboards.append(i[3])
                 self.quizQuestionNumbers.append(i[4])
                 self.quizDifficulties.append(i[6])
+                # The tags needs to be parsed into a list, rather than a CSV string.
+                # The in-line IF statement is to prevent .split() being called on a null value, in case a quiz has no tags.
                 self.quizTags[i[0]] = i[5].split(",") if i[5] else []
-                # This is adds each quiz to each of the visual lists.
+                # This is adds each quiz to each of the on-screen lists.
                 self.quizListBoxNames.insert(tk.END, i[1])
+                # The subject and exam board for the quiz needs to be looked up in the dictionaries because they are stored as IDs in the database.
                 self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
                 self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
                 
@@ -500,9 +549,12 @@ class MainMenu(object):
                 self.quizExamboards.append(i[3])
                 self.quizQuestionNumbers.append(i[4])
                 self.quizDifficulties.append(i[6])
+                # The tags needs to be parsed into a list, rather than a CSV string.
+                # The in-line IF statement is to prevent .split() being called on a null value, in case a quiz has no tags.
                 self.quizTags[i[0]] = i[5].split(",") if i[5] else []
                 # This is adds each quiz to each of the visual lists.
                 self.quizListBoxNames.insert(tk.END, i[1])
+                # The subject and exam board for the quiz needs to be looked up in the dictionaries because they are stored as IDs in the database.
                 self.quizListBoxSubject.insert(tk.END, self.subjectDictionary.get(i[2], ""))
                 self.quizListBoxExamBoard.insert(tk.END, self.examboardDictionary.get(i[3], ""))
                 if(i[8] and len(i[8])):
@@ -523,6 +575,7 @@ class MainMenu(object):
         This method loads the side panel to the Quiz List screen, it contains the quiz details of the currently selected quiz,
         it also contains the buttons for doing actions on the quiz, e.g. launching/editing the selected quiz.
         """
+        # Creating the side panel frame element.
         self.quizListSidePanel = tk.Frame(self.tk)
         self.quizListSidePanel.grid_columnconfigure(0, weight = 1)
         # Text fields, these will be updated whenever a new quiz is selected on the list.
@@ -549,6 +602,7 @@ class MainMenu(object):
         self.quizListSideButtonFrame.grid_rowconfigure(2, weight = 1)
         self.quizListSideButtonFrame.grid_rowconfigure(3, weight = 1)
         # The actual buttons. Each has horizontal padding of 18 pixels each side of the button, and 8 pixels vertical padding.
+        # Each button runs its own subroutine, and each button also starts off disabled, as no quiz will have been selected when the screen loads.
         self.quizListSideLaunchQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Launch Quiz", padx = 18, pady = 8, command = self.launchQuiz, state = tk.DISABLED)
         self.quizListSideEditQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Edit Quiz", padx = 18, pady = 8, command = self.editQuiz, state = tk.DISABLED)
         self.quizListSideExportQuizButton = tk.Button(self.quizListSideButtonFrame, text = "Export Quiz", padx = 18, pady = 8, command = self.exportQuizButtonCommand, state = tk.DISABLED)
@@ -567,7 +621,7 @@ class MainMenu(object):
         in case the login screen needs to be displayed,
         or potentially the quiz browser needs to re-load.
         """
-        # Resetting the grid configuration.
+        # Resetting the grid configuration. The rows and columns which had minimum sizes set also need to be reset.
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 0)
         self.tk.grid_rowconfigure(1, weight = 0, minsize = 0)
         self.tk.grid_rowconfigure(2, weight = 0)
@@ -627,24 +681,34 @@ class MainMenu(object):
         n = -1
         # Get the currently selected list index, from which ever list has something selected.
         if(self.quizListBoxNames.curselection()):
+            # If an element has been selected in the quiz name list.
             n = self.quizListBoxNames.curselection()[0]
         elif(self.quizListBoxSubject.curselection()):
+            # If an element has been selected in the quiz subject list.
             n = self.quizListBoxSubject.curselection()[0]
         elif(self.quizListBoxExamBoard.curselection()):
+            # If an element has been selected in the quiz exam board list.
             n = self.quizListBoxExamBoard.curselection()[0]
         elif(self.quizListBoxBestAttempt.curselection()):
+            # If an element has been selected in the quiz best attempts list.
             n = self.quizListBoxBestAttempt.curselection()[0]
+        # Converting the index to an integer, to prevent errors that could occur if it isn't already an integer.
         self.currentlySelectedQuiz = int(n)
         # This changes all the text labels on the right to the details of the currently selected quiz.
         self.quizListSideName.config(text = self.quizNames[self.currentlySelectedQuiz]) # Showing the quiz title
-        if(self.quizSubjects[self.currentlySelectedQuiz]): # Showing the quiz subject
+        if(self.quizSubjects[self.currentlySelectedQuiz]):
+            # If the quiz has a subject, display it in the side panel.
             self.quizListSideSubject.config(text = self.subjectDictionary[self.quizSubjects[self.currentlySelectedQuiz]])
         else:
-            self.quizListSideSubject.config(text = "") # If there is no subject, set it to nothing.
-        if(self.quizExamboards[self.currentlySelectedQuiz]): # Showing the quiz exam board
+            # If the quiz has no subject set, clear the last quiz's subject text from the side panel.
+            self.quizListSideSubject.config(text = "")
+        if(self.quizExamboards[self.currentlySelectedQuiz]):
+            # If the quiz has an exam board, display it in the side panel.
             self.quizListSideExamboard.config(text = self.examboardDictionary[self.quizExamboards[self.currentlySelectedQuiz]])
         else:
-            self.quizListSideExamboard.config(text = "") # If there is no exam board, set it to nothing.
+            # If the quiz has no exam board set, clear the last quiz's exam board text from the side panel.
+            self.quizListSideExamboard.config(text = "")
+        # Get the number of questions for the currently selected quiz.
         numberOfQuestions = self.quizQuestionNumbers[self.currentlySelectedQuiz]
         # Show the number of questions and the diffiuclty on two lines within the same label.
         self.quizListSideTotalQuestions.config(text = str(numberOfQuestions) + " question"
@@ -687,7 +751,7 @@ class MainMenu(object):
         """
         # Set the scroll bar position.
         self.quizListBoxScrollBar.set(args[0], args[1])
-        # Set all the lists' scroll positions.
+        # Set all the visual lists' scroll positions.
         self.quizListBoxNames.yview("moveto", args[0])
         self.quizListBoxSubject.yview("moveto", args[0])
         self.quizListBoxExamBoard.yview("moveto", args[0])
@@ -695,6 +759,7 @@ class MainMenu(object):
     
     def launchQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
+        # Import the quiz and quizGui files from within the application's base directory.
         import quiz, quizGui
         # The following if statements check each list to see if an entry from any of the lists has been selected, and sets the number n to the selected row number.
         if(self.currentlySelectedQuiz == None):
@@ -710,6 +775,7 @@ class MainMenu(object):
     
     def editQuiz(self) -> None:
         """This launches the quiz window for the currently selected quiz."""
+        # Import the quiz and quizCreator files from within the application's base directory.
         import quiz, quizCreator
         if(self.currentlySelectedQuiz == None):
             # An error message is shown if there are no rows selected, and this method returns so it doesn't try to load a quiz with id of negative one.
@@ -732,12 +798,14 @@ class MainMenu(object):
     
     def createQuizButtonCommand(self) -> None:
         """This function is tied to the create quiz button and the create quiz option on the top menu."""
+        # Import the quizCreator file from within the application's base directory.
         import quizCreator
         # Launches the quiz creator window
         quizCreator.QuizCreatorDialog(self.tk, self)
     
     def importQuizButtonCommand(self) -> None:
         """This function is tied to the import quiz button and the import quiz option on the top menu."""
+        # Import the quiz file from within the application's base directory.
         import quiz
         # This launches your OS's file explorer, and lets you select a file that ends with ".xml".
         filename = tkfile.askopenfilename(filetypes = ["\"Quiz File\" .xml"], parent = self.tk, title = "Import Quiz")
@@ -750,6 +818,7 @@ class MainMenu(object):
     
     def exportQuizButtonCommand(self):
         """This function is tied to the export quiz button."""
+        # Import the quiz file from within the application's base directory.
         import quiz
         if(self.currentlySelectedQuiz == None):
             # An error message is shown if there are no rows selected, and this method returns so it doesn't try to export a quiz with id of negative one.
@@ -773,11 +842,7 @@ class MainMenu(object):
         except IndexError:
             # If the quiz isn't found in the database.
             tkmb.showerror("Error", "The selected quiz wasn't found in the database.", parent = self.tk)
-            """
-        except Exception:
-            # If another error occurs.
-            tkmb.showerror("Error", "The selected quiz is invalid or corrupt.", parent = self.tk)
-            """
+    
     def deleteQuizButtonCommand(self):
         """This function is tied to the delete quiz button."""
         # Get the name and ID of the quiz being deleted.
@@ -798,10 +863,11 @@ class MainMenu(object):
     def userSettings(self) -> None:
         """This launches the user settings window, if there is a user logged in."""
         if(self.currentUser):
-            # If a user is logged in, launch the window.
+            # If a user is logged in, launch the window. This loads the userGui file from the base directory of the application.
             import userGui
             userGui.UserSettingsDialog(self.tk, self)
         else:
+            # If the user has not logged in, then display an error message to the user.
             tkmb.showerror("User error", "No user currently selected, can't change user settings.")
     
     def switchUser(self) -> None:
@@ -822,7 +888,7 @@ class MainMenu(object):
     def launchStatistics(self) -> None:
         """This loads the statistics dialog, if there is a user logged in."""
         if(self.currentUser):
-            # If a user is logged in, launch the window.
+            # If a user is logged in, launch the window. This loads the statsGui file from the base directory of the application.
             import statsGui
             statsGui.StatisticsDialog(self.tk, self)
         else:
@@ -851,10 +917,12 @@ def startGUI() -> None:
         # This line makes the program continue running, as it is an interface-based program and needs to stay running for the user to use the application.
         master.mainloop()
     except:
-        # The following code gets the error message and prints it as an error.
+        # The following code gets the error message and prints it as an error. The two following modules are necessary to fetch and format the error and stack trace.
         import traceback
         import sys
+        # Show the error as a message box to the user.
         tkmb.showerror("Error occured", traceback.format_exc() + "\n\n" + sys.stderr, parent = master)
+        # Also, print it to the console window as well.
         print(traceback.format_exc() + "\n\n" + sys.stderr)
     # This will run even if the app ends in a crash, as most errors should be caught above.
     app.database.dispose()
