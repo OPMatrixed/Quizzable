@@ -251,7 +251,7 @@ class MainMenu(object):
         # The top two rows must have a minimum height, each has a minimum of 40px height.
         # The heights of the rows can be larger if any of the elements on the top two rows need more space, space is added automatically by TkInter.
         self.tk.grid_rowconfigure(0, weight = 0, minsize = 40)
-        self.tk.grid_rowconfigure(1, weight = 0, minsize = 40)]
+        self.tk.grid_rowconfigure(1, weight = 0, minsize = 40)
         # The bottom two rows are for the large frame that holds the question lists and the side panel.
         self.tk.grid_rowconfigure(2, weight = 1)
         self.tk.grid_rowconfigure(3, weight = 1)
